@@ -32,7 +32,7 @@
         class="card-field"
         :style="fieldStyle(field)"
       >
-        {{ getFieldValue(field.key) }}
+        {{ formatValue(field) }}
       </div>
     </div>
   </div>
@@ -58,28 +58,46 @@ const cardStyle = computed(() => ({
 }))
 
 const illustrationSrc = computed(() => {
-  // L'illustration peut venir du CSV (colonne image) ou du type de carte
   if (props.cardType.illustrationColumn && props.cardData[props.cardType.illustrationColumn]) {
     return props.cardData[props.cardType.illustrationColumn]
   }
   return props.cardType.illustrationImage || null
 })
 
-function getFieldValue(key) {
-  return props.cardData[key] ?? ''
+function formatValue(field) {
+  const raw = props.cardData[field.key] ?? ''
+  if (field.uppercase) return String(raw).toUpperCase()
+  return raw
 }
 
 function fieldStyle(field) {
-  return {
+  const style = {
     position: 'absolute',
     left: (field.x ?? 0) + 'px',
     top: (field.y ?? 0) + 'px',
     width: field.width ? field.width + 'px' : 'auto',
     fontSize: (field.fontSize ?? 14) + 'px',
+    fontFamily: field.fontFamily || 'system-ui, sans-serif',
     color: field.color ?? '#000000',
     fontWeight: field.bold ? 'bold' : 'normal',
+    fontStyle: field.italic ? 'italic' : 'normal',
     textAlign: field.align ?? 'left',
+    textTransform: field.uppercase ? 'uppercase' : 'none',
   }
+
+  if (field.height) {
+    style.height = field.height + 'px'
+    style.display = 'flex'
+    style.alignItems =
+      field.verticalAlign === 'middle' ? 'center'
+      : field.verticalAlign === 'bottom' ? 'flex-end'
+      : 'flex-start'
+    if (field.align === 'center') style.justifyContent = 'center'
+    else if (field.align === 'right') style.justifyContent = 'flex-end'
+    else style.justifyContent = 'flex-start'
+  }
+
+  return style
 }
 </script>
 
@@ -126,5 +144,6 @@ function fieldStyle(field) {
   pointer-events: none;
   white-space: pre-wrap;
   word-wrap: break-word;
+  overflow: hidden;
 }
 </style>

@@ -42,61 +42,14 @@
       v-model="form.overlayImage"
     />
 
-    <h4>Champs de contenu (couche 4)</h4>
-    <div v-for="(field, i) in form.contentFields" :key="i" class="content-field">
-      <div class="content-field__header">
-        <strong>Champ {{ i + 1 }}</strong>
-        <button class="btn btn--small btn--danger" @click="removeField(i)">&times;</button>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Colonne CSV</label>
-          <select v-model="field.key">
-            <option value="">-- Choisir --</option>
-            <option v-for="col in csvColumns" :key="col" :value="col">{{ col }}</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>X (px)</label>
-          <input v-model.number="field.x" type="number" />
-        </div>
-        <div class="form-group">
-          <label>Y (px)</label>
-          <input v-model.number="field.y" type="number" />
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Largeur (px)</label>
-          <input v-model.number="field.width" type="number" />
-        </div>
-        <div class="form-group">
-          <label>Taille police</label>
-          <input v-model.number="field.fontSize" type="number" min="8" max="72" />
-        </div>
-        <div class="form-group">
-          <label>Couleur</label>
-          <input v-model="field.color" type="color" />
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>
-            <input v-model="field.bold" type="checkbox" /> Gras
-          </label>
-        </div>
-        <div class="form-group">
-          <label>Alignement</label>
-          <select v-model="field.align">
-            <option value="left">Gauche</option>
-            <option value="center">Centre</option>
-            <option value="right">Droite</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <button class="btn btn--secondary" @click="addField">+ Ajouter un champ</button>
+    <!-- Mapping visuel des zones de contenu -->
+    <FieldMapper
+      :fields="form.contentFields"
+      :card-type="form"
+      :csv-columns="csvColumns"
+      :preview-data="previewData"
+      @update:fields="form.contentFields = $event"
+    />
 
     <div class="form-actions">
       <button class="btn btn--primary" @click="save" :disabled="!form.name">
@@ -108,8 +61,9 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import ImageUploader from './ImageUploader.vue'
+import FieldMapper from './FieldMapper.vue'
 import { useCardsStore } from '../stores/cards.js'
 
 const props = defineProps({
@@ -134,13 +88,12 @@ const defaultForm = () => ({
 
 const form = ref(defaultForm())
 
-const csvColumns = ref([])
+const csvColumns = computed(() => store.csvColumns)
 
-watch(
-  () => store.csvColumns,
-  (cols) => { csvColumns.value = cols },
-  { immediate: true }
-)
+const previewData = computed(() => {
+  if (store.csvData.length > 0) return store.csvData[0]
+  return {}
+})
 
 watch(
   () => props.editingType,
@@ -160,23 +113,6 @@ watch(
   { immediate: true }
 )
 
-function addField() {
-  form.value.contentFields.push({
-    key: '',
-    x: 20,
-    y: 20 + form.value.contentFields.length * 30,
-    width: 260,
-    fontSize: 14,
-    color: '#000000',
-    bold: false,
-    align: 'left',
-  })
-}
-
-function removeField(index) {
-  form.value.contentFields.splice(index, 1)
-}
-
 function save() {
   const data = {
     name: form.value.name,
@@ -186,7 +122,7 @@ function save() {
     illustrationImage: form.value.illustrationImage,
     illustrationColumn: form.value.illustrationColumn,
     overlayImage: form.value.overlayImage,
-    contentFields: form.value.contentFields,
+    contentFields: form.value.contentFields.map((f) => ({ ...f })),
   }
 
   if (isEditing.value && props.editingType) {
@@ -255,29 +191,9 @@ function save() {
   flex: 1;
 }
 
-.content-field {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  padding: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.content-field__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
 .form-actions {
   display: flex;
   gap: 0.75rem;
   margin-top: 1rem;
-}
-
-h4 {
-  margin-top: 1.5rem;
-  margin-bottom: 0.75rem;
 }
 </style>

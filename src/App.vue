@@ -5,91 +5,87 @@
       <p class="app-subtitle">Crée et génère tes cartes de jeu de société</p>
     </header>
 
-    <div class="app-layout">
-      <!-- Panneau gauche : Configuration -->
-      <aside class="app-sidebar">
-        <!-- Types de cartes existants -->
-        <section class="sidebar-section">
-          <h2>Types de cartes</h2>
-          <div v-if="store.cardTypes.length === 0" class="empty-state">
-            Aucun type de carte. Crée ton premier type ci-dessous.
-          </div>
-          <div v-else class="card-type-list">
-            <button
-              v-for="ct in store.cardTypes"
-              :key="ct.id"
-              class="card-type-btn"
-              :class="{ 'card-type-btn--active': store.selectedCardTypeId === ct.id }"
-              @click="store.selectCardType(ct.id)"
-            >
-              <span class="card-type-btn__name">{{ ct.name }}</span>
-              <span class="card-type-btn__size">{{ ct.width }}x{{ ct.height }}</span>
-              <span class="card-type-btn__actions">
-                <button class="btn btn--small" @click.stop="editType(ct)">Modifier</button>
-                <button class="btn btn--small btn--danger" @click.stop="store.deleteCardType(ct.id)">&times;</button>
-              </span>
-            </button>
-          </div>
-        </section>
+    <!-- Barre de types de cartes -->
+    <section class="section">
+      <div class="section__header">
+        <h2>Types de cartes</h2>
+      </div>
+      <div v-if="store.cardTypes.length === 0" class="empty-state">
+        Aucun type de carte. Crée ton premier type ci-dessous.
+      </div>
+      <div v-else class="card-type-list">
+        <button
+          v-for="ct in store.cardTypes"
+          :key="ct.id"
+          class="card-type-btn"
+          :class="{ 'card-type-btn--active': store.selectedCardTypeId === ct.id }"
+          @click="store.selectCardType(ct.id)"
+        >
+          <span class="card-type-btn__name">{{ ct.name }}</span>
+          <span class="card-type-btn__size">{{ ct.width }}x{{ ct.height }}</span>
+          <span class="card-type-btn__actions">
+            <button class="btn btn--small" @click.stop="editType(ct)">Modifier</button>
+            <button class="btn btn--small btn--danger" @click.stop="store.deleteCardType(ct.id)">&times;</button>
+          </span>
+        </button>
+      </div>
+    </section>
 
-        <!-- Éditeur de type de carte -->
-        <section class="sidebar-section">
-          <CardTypeEditor
-            :editing-type="editingCardType"
-            @saved="editingCardType = null"
-            @cancel="editingCardType = null"
-          />
-        </section>
+    <!-- Éditeur de type de carte (avec FieldMapper intégré) -->
+    <section class="section">
+      <CardTypeEditor
+        :editing-type="editingCardType"
+        @saved="editingCardType = null"
+        @cancel="editingCardType = null"
+      />
+    </section>
 
-        <!-- Upload CSV -->
-        <section class="sidebar-section">
-          <CsvUploader />
-        </section>
+    <!-- Upload CSV -->
+    <section class="section">
+      <CsvUploader />
+    </section>
 
-        <!-- Actions -->
-        <section v-if="store.selectedCardType && store.csvData.length > 0" class="sidebar-section">
-          <h3>Génération</h3>
-          <p class="gen-info">
-            Type : <strong>{{ store.selectedCardType.name }}</strong><br />
-            Données : <strong>{{ store.csvData.length }} lignes</strong>
-          </p>
-          <div class="gen-actions">
-            <button class="btn btn--primary" @click="store.generateCards()">
-              Générer les cartes
-            </button>
-            <button
-              v-if="currentTypeCards.length > 0"
-              class="btn btn--danger"
-              @click="store.clearGeneratedCards(store.selectedCardTypeId)"
-            >
-              Supprimer les cartes
-            </button>
-          </div>
-        </section>
+    <!-- Actions de génération -->
+    <section v-if="store.selectedCardType && store.csvData.length > 0" class="section section--actions">
+      <h3>Génération</h3>
+      <p class="gen-info">
+        Type : <strong>{{ store.selectedCardType.name }}</strong> |
+        Données : <strong>{{ store.csvData.length }} lignes</strong>
+      </p>
+      <div class="gen-actions">
+        <button class="btn btn--primary" @click="store.generateCards()">
+          Générer les cartes
+        </button>
+        <button
+          v-if="currentTypeCards.length > 0"
+          class="btn btn--danger"
+          @click="store.clearGeneratedCards(store.selectedCardTypeId)"
+        >
+          Supprimer les cartes
+        </button>
+      </div>
+    </section>
 
-        <!-- Reset -->
-        <section class="sidebar-section sidebar-section--bottom">
-          <button class="btn btn--danger" @click="confirmReset">Tout réinitialiser</button>
-        </section>
-      </aside>
+    <!-- Prévisualisation en direct -->
+    <section v-if="store.selectedCardType" class="section">
+      <h2>Prévisualisation - {{ store.selectedCardType.name }}</h2>
+      <div class="preview-single">
+        <CardPreview
+          :card-type="store.selectedCardType"
+          :card-data="previewData"
+        />
+      </div>
+    </section>
 
-      <!-- Panneau droit : Prévisualisation -->
-      <main class="app-main">
-        <!-- Prévisualisation en direct -->
-        <section v-if="store.selectedCardType" class="preview-section">
-          <h2>Prévisualisation - {{ store.selectedCardType.name }}</h2>
-          <div class="preview-single">
-            <CardPreview
-              :card-type="store.selectedCardType"
-              :card-data="previewData"
-            />
-          </div>
-        </section>
+    <!-- Galerie des cartes générées -->
+    <section class="section">
+      <CardGallery />
+    </section>
 
-        <!-- Galerie -->
-        <CardGallery />
-      </main>
-    </div>
+    <!-- Reset -->
+    <section class="section section--bottom">
+      <button class="btn btn--danger" @click="confirmReset">Tout réinitialiser</button>
+    </section>
   </div>
 </template>
 
@@ -150,35 +146,29 @@ function confirmReset() {
   margin: 0;
 }
 
-.app-layout {
+.section {
+  margin-bottom: 2rem;
+}
+
+.section__header {
   display: flex;
-  gap: 2rem;
-  align-items: flex-start;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
 }
 
-.app-sidebar {
-  width: 420px;
-  flex-shrink: 0;
-  max-height: calc(100vh - 150px);
-  overflow-y: auto;
-  padding-right: 0.5rem;
-}
-
-.app-main {
-  flex: 1;
-  min-width: 0;
-}
-
-.sidebar-section {
-  margin-bottom: 1.5rem;
-}
-
-.sidebar-section h2 {
+.section h2 {
   font-size: 1.2rem;
   margin-bottom: 0.75rem;
 }
 
-.sidebar-section--bottom {
+.section--actions {
+  background: #f5f5f5;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+}
+
+.section--bottom {
   padding-top: 1rem;
   border-top: 1px solid #e0e0e0;
 }
@@ -194,7 +184,7 @@ function confirmReset() {
 
 .card-type-list {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
@@ -210,7 +200,6 @@ function confirmReset() {
   transition: all 0.15s;
   text-align: left;
   font-size: 0.9rem;
-  width: 100%;
 }
 
 .card-type-btn:hover {
@@ -224,7 +213,6 @@ function confirmReset() {
 
 .card-type-btn__name {
   font-weight: 600;
-  flex: 1;
 }
 
 .card-type-btn__size {
@@ -248,15 +236,6 @@ function confirmReset() {
   flex-wrap: wrap;
 }
 
-.preview-section {
-  margin-bottom: 2rem;
-}
-
-.preview-section h2 {
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
-}
-
 .preview-single {
   display: flex;
   justify-content: center;
@@ -265,14 +244,9 @@ function confirmReset() {
   border-radius: 12px;
 }
 
-@media (max-width: 900px) {
-  .app-layout {
+@media (max-width: 600px) {
+  .card-type-list {
     flex-direction: column;
-  }
-
-  .app-sidebar {
-    width: 100%;
-    max-height: none;
   }
 }
 </style>
