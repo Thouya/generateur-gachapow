@@ -1,19 +1,33 @@
 <template>
-  <div class="image-uploader">
-    <label class="image-uploader__label">{{ label }}</label>
-    <div class="image-uploader__preview" v-if="modelValue">
-      <img :src="modelValue" :alt="label" />
-      <button class="image-uploader__remove" @click="$emit('update:modelValue', '')" title="Supprimer">&times;</button>
+  <div class="mb-4">
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ label }}</label>
+    <div v-if="modelValue" class="relative inline-block max-w-[200px]">
+      <img :src="modelValue" :alt="label" class="w-full rounded-lg border border-gray-200 dark:border-gray-700" />
+      <UButton
+        class="absolute top-1 right-1"
+        color="error"
+        variant="solid"
+        size="xs"
+        icon="i-lucide-x"
+        @click="$emit('update:modelValue', '')"
+      />
     </div>
-    <div v-else class="image-uploader__drop" @dragover.prevent @drop.prevent="onDrop">
+    <div
+      v-else
+      class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors cursor-pointer"
+      @dragover.prevent
+      @drop.prevent="onDrop"
+      @click="$refs.input.click()"
+    >
       <input
         ref="input"
         type="file"
         accept="image/*"
-        class="image-uploader__input"
+        class="hidden"
         @change="onFileChange"
       />
-      <button class="link-btn" @click="$refs.input.click()">Choisir une image</button>
+      <UIcon name="i-lucide-image-plus" class="text-2xl text-gray-400 mb-2" />
+      <p class="text-sm text-gray-500">Glisser ou cliquer pour choisir</p>
     </div>
   </div>
 </template>
@@ -46,66 +60,3 @@ function onDrop(e) {
   readFile(e.dataTransfer.files[0])
 }
 </script>
-
-<style scoped>
-.image-uploader {
-  margin-bottom: 1rem;
-}
-
-.image-uploader__label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 0.35rem;
-  font-size: 0.9rem;
-}
-
-.image-uploader__preview {
-  position: relative;
-  display: inline-block;
-  max-width: 200px;
-}
-
-.image-uploader__preview img {
-  width: 100%;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-}
-
-.image-uploader__remove {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.image-uploader__drop {
-  border: 2px dashed #aaa;
-  border-radius: 6px;
-  padding: 1rem;
-  text-align: center;
-}
-
-.image-uploader__input {
-  display: none;
-}
-
-.link-btn {
-  background: none;
-  border: none;
-  color: #4a90d9;
-  cursor: pointer;
-  text-decoration: underline;
-  font-size: inherit;
-}
-</style>

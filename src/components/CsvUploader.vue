@@ -1,44 +1,81 @@
 <template>
-  <div class="csv-uploader">
-    <h3>Données CSV</h3>
+  <UCard>
+    <template #header>
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold">Données CSV</h3>
+        <UBadge v-if="store.csvData.length > 0" color="primary" variant="subtle">
+          {{ store.csvData.length }} lignes
+        </UBadge>
+      </div>
+    </template>
 
-    <div class="upload-zone" @dragover.prevent @drop.prevent="onDrop">
+    <!-- Zone d'upload -->
+    <div
+      v-if="store.csvData.length === 0"
+      class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-primary-500 transition-colors cursor-pointer"
+      @dragover.prevent
+      @drop.prevent="onDrop"
+      @click="$refs.fileInput.click()"
+    >
       <input
         ref="fileInput"
         type="file"
         accept=".csv"
-        class="file-input"
+        class="hidden"
         @change="onFileChange"
       />
-      <p>Glissez un fichier CSV ici ou <button class="link-btn" @click="$refs.fileInput.click()">parcourir</button></p>
+      <UIcon name="i-lucide-file-spreadsheet" class="text-4xl text-gray-400 mb-3" />
+      <p class="text-gray-500">Glissez un fichier CSV ici ou cliquez pour parcourir</p>
     </div>
 
-    <div v-if="store.csvData.length > 0" class="csv-info">
-      <p>{{ store.csvData.length }} lignes chargées</p>
-      <p class="csv-columns">Colonnes : {{ store.csvColumns.join(', ') }}</p>
+    <!-- Données chargées -->
+    <div v-else>
+      <div class="flex flex-wrap gap-1 mb-3">
+        <UBadge v-for="col in store.csvColumns" :key="col" color="neutral" variant="subtle" size="sm">
+          {{ col }}
+        </UBadge>
+      </div>
 
-      <div class="csv-table-wrapper">
-        <table class="csv-table">
+      <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 mb-3">
+        <table class="w-full text-sm">
           <thead>
-            <tr>
-              <th v-for="col in store.csvColumns" :key="col">{{ col }}</th>
+            <tr class="bg-gray-50 dark:bg-gray-800">
+              <th
+                v-for="col in store.csvColumns"
+                :key="col"
+                class="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700"
+              >
+                {{ col }}
+              </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(row, i) in previewRows" :key="i">
-              <td v-for="col in store.csvColumns" :key="col">{{ row[col] }}</td>
+            <tr
+              v-for="(row, i) in previewRows"
+              :key="i"
+              class="border-b border-gray-100 dark:border-gray-800 last:border-0"
+            >
+              <td
+                v-for="col in store.csvColumns"
+                :key="col"
+                class="px-3 py-2 max-w-[150px] truncate text-gray-700 dark:text-gray-300"
+              >
+                {{ row[col] }}
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <p v-if="store.csvData.length > 5" class="csv-more">
+      <p v-if="store.csvData.length > 5" class="text-xs text-gray-400 mb-3">
         ... et {{ store.csvData.length - 5 }} autres lignes
       </p>
 
-      <button class="btn btn--danger" @click="store.clearCsvData()">Supprimer les données</button>
+      <UButton variant="soft" color="error" size="sm" icon="i-lucide-trash-2" @click="store.clearCsvData()">
+        Supprimer les données
+      </UButton>
     </div>
-  </div>
+  </UCard>
 </template>
 
 <script setup>
@@ -68,80 +105,3 @@ function onDrop(e) {
   handleFile(e.dataTransfer.files[0])
 }
 </script>
-
-<style scoped>
-.csv-uploader {
-  margin-bottom: 1.5rem;
-}
-
-.upload-zone {
-  border: 2px dashed #888;
-  border-radius: 8px;
-  padding: 2rem;
-  text-align: center;
-  transition: border-color 0.2s;
-  margin-bottom: 1rem;
-}
-
-.upload-zone:hover {
-  border-color: #4a90d9;
-}
-
-.file-input {
-  display: none;
-}
-
-.link-btn {
-  background: none;
-  border: none;
-  color: #4a90d9;
-  cursor: pointer;
-  text-decoration: underline;
-  font-size: inherit;
-}
-
-.csv-info {
-  background: #f5f5f5;
-  border-radius: 8px;
-  padding: 1rem;
-}
-
-.csv-columns {
-  font-size: 0.85rem;
-  color: #666;
-  margin-bottom: 0.5rem;
-}
-
-.csv-table-wrapper {
-  overflow-x: auto;
-  margin-bottom: 0.5rem;
-}
-
-.csv-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-}
-
-.csv-table th,
-.csv-table td {
-  border: 1px solid #ddd;
-  padding: 0.35rem 0.5rem;
-  text-align: left;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.csv-table th {
-  background: #e8e8e8;
-  font-weight: 600;
-}
-
-.csv-more {
-  font-size: 0.85rem;
-  color: #888;
-  margin-bottom: 0.5rem;
-}
-</style>
