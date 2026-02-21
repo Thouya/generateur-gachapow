@@ -6,6 +6,13 @@
       <p class="text-gray-500">Crée et génère tes cartes de jeu de société</p>
     </header>
 
+    <!-- Chargement -->
+    <div v-if="store.loading" class="text-center text-gray-400 py-16">
+      <UIcon name="i-lucide-loader-2" class="text-4xl animate-spin mb-3" />
+      <p>Chargement des données…</p>
+    </div>
+
+    <template v-else>
     <!-- Sélecteur de projet -->
     <section class="mb-8">
       <ProjectManager />
@@ -108,6 +115,7 @@
           Tout réinitialiser
         </UButton>
       </section>
+    </template>
     </template>
   </div>
 </template>
