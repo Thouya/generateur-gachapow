@@ -17,6 +17,7 @@ declare module 'vue' {
     CsvUploader: typeof import('./src/components/CsvUploader.vue')['default']
     FieldMapper: typeof import('./src/components/FieldMapper.vue')['default']
     ImageUploader: typeof import('./src/components/ImageUploader.vue')['default']
+    ProjectManager: typeof import('./src/components/ProjectManager.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     UBadge: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Badge.vue')['default']
