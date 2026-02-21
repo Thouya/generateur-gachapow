@@ -44,11 +44,50 @@ function cardTypeToDb(ct, projectId) {
   }
 }
 
+// ── Historique ──────────────────────────────────────
+const IMAGE_FIELDS = ['backgroundImage', 'illustrationImage', 'overlayImage']
+
+function makeSnapshot(ct) {
+  return {
+    name: ct.name,
+    width: ct.width,
+    height: ct.height,
+    hasBackgroundImage: !!ct.backgroundImage,
+    hasIllustrationImage: !!ct.illustrationImage,
+    hasOverlayImage: !!ct.overlayImage,
+    illustrationColumn: ct.illustrationColumn,
+    contentFields: ct.contentFields,
+  }
+}
+
+function computeChanges(oldCt, updates) {
+  const changes = {}
+  for (const key of Object.keys(updates)) {
+    const oldVal = oldCt[key]
+    const newVal = updates[key]
+    if (IMAGE_FIELDS.includes(key)) {
+      if (oldVal !== newVal) {
+        changes[key] = { from: oldVal ? '(image)' : '(vide)', to: newVal ? '(image)' : '(vide)' }
+      }
+    } else if (key === 'contentFields') {
+      if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+        const oldNames = (oldVal || []).map((f) => f.label || f.column).join(', ')
+        const newNames = (newVal || []).map((f) => f.label || f.column).join(', ')
+        changes[key] = { from: oldNames || '(aucun)', to: newNames || '(aucun)' }
+      }
+    } else if (oldVal !== newVal) {
+      changes[key] = { from: oldVal, to: newVal }
+    }
+  }
+  return changes
+}
+
 // ── Store ───────────────────────────────────────────
 export const useCardsStore = defineStore('cards', () => {
   const projects = ref([])
   const selectedProjectId = ref(null)
   const loading = ref(false)
+  const cardTypeHistory = ref([])
 
   // ── Computed ────────────────────────────────────────
   const selectedProject = computed(() =>
@@ -194,6 +233,55 @@ export const useCardsStore = defineStore('cards', () => {
     localStorage.setItem('gachapow-selected-project', id)
   }
 
+  // ── Historique ──────────────────────────────────────
+  function recordHistory(cardTypeId, projectId, action, changes, snapshot) {
+    const entry = {
+      id: uid(),
+      cardTypeId,
+      action,
+      changes,
+      snapshot,
+      createdAt: new Date().toISOString(),
+    }
+    // Ajouter en tête si on regarde déjà l'historique de ce type
+    if (cardTypeHistory.value.length > 0 && cardTypeHistory.value[0]?.cardTypeId === cardTypeId) {
+      cardTypeHistory.value.unshift(entry)
+    }
+    db(
+      supabase.from('card_type_history').insert({
+        id: entry.id,
+        card_type_id: cardTypeId,
+        project_id: projectId,
+        action,
+        changes,
+        snapshot,
+        created_at: entry.createdAt,
+      })
+    )
+  }
+
+  async function loadHistory(cardTypeId) {
+    const { data, error } = await supabase
+      .from('card_type_history')
+      .select('*')
+      .eq('card_type_id', cardTypeId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('[Supabase]', error.message)
+      return
+    }
+
+    cardTypeHistory.value = (data || []).map((h) => ({
+      id: h.id,
+      cardTypeId: h.card_type_id,
+      action: h.action,
+      changes: h.changes || {},
+      snapshot: h.snapshot || {},
+      createdAt: h.created_at,
+    }))
+  }
+
   // ── Types de cartes ─────────────────────────────────
   function addCardType(cardType) {
     if (!selectedProject.value) return null
@@ -201,6 +289,7 @@ export const useCardsStore = defineStore('cards', () => {
     const ct = { id, ...cardType }
     selectedProject.value.cardTypes.push(ct)
     db(supabase.from('card_types').insert(cardTypeToDb(ct, selectedProject.value.id)))
+    recordHistory(id, selectedProject.value.id, 'created', {}, makeSnapshot(ct))
     return id
   }
 
@@ -208,7 +297,22 @@ export const useCardsStore = defineStore('cards', () => {
     if (!selectedProject.value) return
     const idx = selectedProject.value.cardTypes.findIndex((t) => t.id === id)
     if (idx === -1) return
-    selectedProject.value.cardTypes[idx] = { ...selectedProject.value.cardTypes[idx], ...updates }
+
+    const oldCt = selectedProject.value.cardTypes[idx]
+    const changes = computeChanges(oldCt, updates)
+
+    // Enregistrer l'historique si changements réels
+    if (Object.keys(changes).length > 0) {
+      recordHistory(
+        id,
+        selectedProject.value.id,
+        'updated',
+        changes,
+        makeSnapshot({ ...oldCt, ...updates })
+      )
+    }
+
+    selectedProject.value.cardTypes[idx] = { ...oldCt, ...updates }
 
     // Conversion camelCase → snake_case pour la DB
     const dbUp = {}
@@ -228,6 +332,10 @@ export const useCardsStore = defineStore('cards', () => {
 
   function deleteCardType(id) {
     if (!selectedProject.value) return
+    const ct = selectedProject.value.cardTypes.find((t) => t.id === id)
+    if (ct) {
+      recordHistory(id, selectedProject.value.id, 'deleted', {}, makeSnapshot(ct))
+    }
     selectedProject.value.cardTypes = selectedProject.value.cardTypes.filter((t) => t.id !== id)
     selectedProject.value.generatedCards = selectedProject.value.generatedCards.filter(
       (c) => c.cardTypeId !== id
@@ -236,7 +344,7 @@ export const useCardsStore = defineStore('cards', () => {
       selectedProject.value.selectedCardTypeId =
         selectedProject.value.cardTypes[0]?.id || null
     }
-    // CASCADE en DB supprime aussi les generated_cards associées
+    // CASCADE en DB supprime aussi les generated_cards et l'historique associés
     db(supabase.from('card_types').delete().eq('id', id))
   }
 
@@ -378,5 +486,7 @@ export const useCardsStore = defineStore('cards', () => {
     generateCards,
     clearGeneratedCards,
     resetAll,
+    cardTypeHistory,
+    loadHistory,
   }
 })

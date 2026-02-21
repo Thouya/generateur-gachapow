@@ -42,6 +42,7 @@
             <span class="text-gray-400 text-xs">{{ ct.width }}x{{ ct.height }}</span>
             <div class="flex gap-1">
               <UButton size="xs" variant="soft" @click.stop="editType(ct)">Modifier</UButton>
+              <UButton size="xs" variant="ghost" icon="i-lucide-history" @click.stop="openHistory(ct)" />
               <UButton size="xs" variant="soft" color="error" icon="i-lucide-x" @click.stop="store.deleteCardType(ct.id)" />
             </div>
           </div>
@@ -117,6 +118,14 @@
       </section>
     </template>
     </template>
+
+    <!-- Modal historique -->
+    <CardTypeHistory
+      :open="historyOpen"
+      :card-type-id="historyCardType?.id"
+      :card-type-name="historyCardType?.name"
+      @close="historyOpen = false"
+    />
   </div>
 </template>
 
@@ -128,9 +137,12 @@ import CardTypeEditor from './components/CardTypeEditor.vue'
 import CsvUploader from './components/CsvUploader.vue'
 import CardPreview from './components/CardPreview.vue'
 import CardGallery from './components/CardGallery.vue'
+import CardTypeHistory from './components/CardTypeHistory.vue'
 
 const store = useCardsStore()
 const editingCardType = ref(null)
+const historyOpen = ref(false)
+const historyCardType = ref(null)
 
 onMounted(() => {
   store.init()
@@ -149,6 +161,11 @@ const currentTypeCards = computed(() =>
 
 function editType(cardType) {
   editingCardType.value = { ...cardType, contentFields: cardType.contentFields?.map((f) => ({ ...f })) }
+}
+
+function openHistory(ct) {
+  historyCardType.value = ct
+  historyOpen.value = true
 }
 
 function confirmReset() {

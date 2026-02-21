@@ -51,3 +51,20 @@ ALTER TABLE generated_cards ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "allow_all_projects" ON projects FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "allow_all_card_types" ON card_types FOR ALL TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "allow_all_generated_cards" ON generated_cards FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- Table d'historique des modifications de types de cartes
+CREATE TABLE IF NOT EXISTS card_type_history (
+  id TEXT PRIMARY KEY,
+  card_type_id TEXT NOT NULL REFERENCES card_types(id) ON DELETE CASCADE,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  action TEXT NOT NULL,
+  changes JSONB DEFAULT '{}'::jsonb,
+  snapshot JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_history_card_type ON card_type_history(card_type_id);
+CREATE INDEX IF NOT EXISTS idx_history_project ON card_type_history(project_id);
+
+ALTER TABLE card_type_history ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "allow_all_history" ON card_type_history FOR ALL TO anon USING (true) WITH CHECK (true);
