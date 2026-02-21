@@ -1,11 +1,11 @@
 <template>
-  <div class="field-mapper">
-    <h4>Placement des zones de contenu</h4>
-    <p class="field-mapper__hint">
+  <div class="mt-4">
+    <h4 class="text-base font-semibold mb-1">Placement des zones de contenu</h4>
+    <p class="text-sm text-gray-500 mb-4">
       Glisse les zones directement sur la carte pour les positionner. Clique sur une zone pour la configurer.
     </p>
 
-    <div class="field-mapper__workspace">
+    <div class="flex gap-6 items-start mb-4">
       <!-- Carte de prévisualisation interactive -->
       <div
         ref="cardRef"
@@ -28,7 +28,6 @@
           @click.stop="selectField(i)"
         >
           <span class="field-zone__label">{{ field.label || field.key || `Zone ${i + 1}` }}</span>
-          <!-- Poignée de resize -->
           <div
             class="field-zone__resize"
             @mousedown.prevent.stop="startResize(i, $event)"
@@ -37,115 +36,106 @@
       </div>
 
       <!-- Panneau de configuration du champ sélectionné -->
-      <div v-if="selectedField" class="field-config">
-        <div class="field-config__header">
-          <strong>{{ selectedField.label || selectedField.key || `Zone ${selectedFieldIndex + 1}` }}</strong>
-          <button class="btn btn--small btn--danger" @click="removeField(selectedFieldIndex)">&times;</button>
-        </div>
+      <UCard v-if="selectedField" class="flex-1 min-w-[220px] max-h-[480px] overflow-y-auto">
+        <template #header>
+          <div class="flex justify-between items-center">
+            <strong>{{ selectedField.label || selectedField.key || `Zone ${selectedFieldIndex + 1}` }}</strong>
+            <UButton size="xs" color="error" variant="soft" icon="i-lucide-trash-2" @click="removeField(selectedFieldIndex)" />
+          </div>
+        </template>
 
-        <div class="field-config__form">
-          <div class="fc-group">
-            <label>Label (affiché en édition)</label>
-            <input v-model="selectedField.label" type="text" placeholder="Ex: Nom, ATQ, PV..." />
+        <div class="space-y-3">
+          <UFormField label="Label (affiché en édition)">
+            <UInput v-model="selectedField.label" placeholder="Ex: Nom, ATQ, PV..." size="sm" />
+          </UFormField>
+
+          <UFormField label="Colonne CSV">
+            <USelect
+              v-model="selectedField.key"
+              :items="csvColumnOptions"
+              value-key="value"
+              size="sm"
+            />
+          </UFormField>
+
+          <div class="grid grid-cols-4 gap-2">
+            <UFormField label="X">
+              <UInput v-model.number="selectedField.x" type="number" size="sm" />
+            </UFormField>
+            <UFormField label="Y">
+              <UInput v-model.number="selectedField.y" type="number" size="sm" />
+            </UFormField>
+            <UFormField label="Largeur">
+              <UInput v-model.number="selectedField.width" type="number" size="sm" />
+            </UFormField>
+            <UFormField label="Hauteur">
+              <UInput v-model.number="selectedField.height" type="number" size="sm" />
+            </UFormField>
           </div>
 
-          <div class="fc-group">
-            <label>Colonne CSV</label>
-            <select v-model="selectedField.key">
-              <option value="">-- Choisir --</option>
-              <option v-for="col in csvColumns" :key="col" :value="col">{{ col }}</option>
-            </select>
+          <div class="grid grid-cols-2 gap-2">
+            <UFormField label="Police">
+              <USelect
+                v-model="selectedField.fontFamily"
+                :items="fontOptions"
+                value-key="value"
+                size="sm"
+              />
+            </UFormField>
+            <UFormField label="Taille">
+              <UInput v-model.number="selectedField.fontSize" type="number" :min="6" :max="120" size="sm" />
+            </UFormField>
           </div>
 
-          <div class="fc-row">
-            <div class="fc-group">
-              <label>X</label>
-              <input v-model.number="selectedField.x" type="number" />
-            </div>
-            <div class="fc-group">
-              <label>Y</label>
-              <input v-model.number="selectedField.y" type="number" />
-            </div>
-            <div class="fc-group">
-              <label>Largeur</label>
-              <input v-model.number="selectedField.width" type="number" />
-            </div>
-            <div class="fc-group">
-              <label>Hauteur</label>
-              <input v-model.number="selectedField.height" type="number" />
-            </div>
+          <div class="grid grid-cols-3 gap-2">
+            <UFormField label="Couleur">
+              <input v-model="selectedField.color" type="color" class="w-10 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" />
+            </UFormField>
+            <UFormField label="Alignement">
+              <USelect
+                v-model="selectedField.align"
+                :items="alignOptions"
+                value-key="value"
+                size="sm"
+              />
+            </UFormField>
+            <UFormField label="Vertical">
+              <USelect
+                v-model="selectedField.verticalAlign"
+                :items="verticalAlignOptions"
+                value-key="value"
+                size="sm"
+              />
+            </UFormField>
           </div>
 
-          <div class="fc-row">
-            <div class="fc-group fc-group--grow">
-              <label>Police</label>
-              <select v-model="selectedField.fontFamily">
-                <option v-for="font in availableFonts" :key="font.value" :value="font.value">
-                  {{ font.label }}
-                </option>
-              </select>
-            </div>
-            <div class="fc-group">
-              <label>Taille</label>
-              <input v-model.number="selectedField.fontSize" type="number" min="6" max="120" />
-            </div>
-          </div>
-
-          <div class="fc-row">
-            <div class="fc-group">
-              <label>Couleur</label>
-              <input v-model="selectedField.color" type="color" />
-            </div>
-            <div class="fc-group">
-              <label>Alignement</label>
-              <select v-model="selectedField.align">
-                <option value="left">Gauche</option>
-                <option value="center">Centre</option>
-                <option value="right">Droite</option>
-              </select>
-            </div>
-            <div class="fc-group">
-              <label>Vertical</label>
-              <select v-model="selectedField.verticalAlign">
-                <option value="top">Haut</option>
-                <option value="middle">Milieu</option>
-                <option value="bottom">Bas</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="fc-row">
-            <label class="fc-checkbox">
-              <input v-model="selectedField.bold" type="checkbox" /> Gras
-            </label>
-            <label class="fc-checkbox">
-              <input v-model="selectedField.italic" type="checkbox" /> Italique
-            </label>
-            <label class="fc-checkbox">
-              <input v-model="selectedField.uppercase" type="checkbox" /> MAJUSCULES
-            </label>
+          <div class="flex gap-4">
+            <UCheckbox v-model="selectedField.bold" label="Gras" />
+            <UCheckbox v-model="selectedField.italic" label="Italique" />
+            <UCheckbox v-model="selectedField.uppercase" label="MAJUSCULES" />
           </div>
 
           <!-- Aperçu du rendu du champ -->
-          <div class="fc-preview" :style="fieldPreviewStyle">
+          <div class="mt-3 p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded min-h-8" :style="fieldPreviewStyle">
             {{ previewText }}
           </div>
         </div>
-      </div>
+      </UCard>
     </div>
 
     <!-- Liste des champs + ajout -->
-    <div class="field-mapper__list">
-      <div
+    <div class="flex flex-wrap gap-2 items-center">
+      <UBadge
         v-for="(field, i) in fields"
         :key="i"
-        class="field-tag"
-        :class="{ 'field-tag--active': selectedFieldIndex === i }"
+        :color="selectedFieldIndex === i ? 'warning' : 'primary'"
+        variant="subtle"
+        class="cursor-pointer"
         @click="selectField(i)"
       >
         {{ field.label || field.key || `Zone ${i + 1}` }}
-      </div>
-      <button class="btn btn--secondary btn--small" @click="addField">+ Ajouter une zone</button>
+      </UBadge>
+      <UButton size="xs" variant="soft" icon="i-lucide-plus" @click="addField">Ajouter une zone</UButton>
     </div>
   </div>
 </template>
@@ -177,7 +167,24 @@ const AVAILABLE_FONTS = [
   { label: 'Lucida Console', value: '"Lucida Console", monospace' },
 ]
 
-const availableFonts = ref(AVAILABLE_FONTS)
+const fontOptions = AVAILABLE_FONTS
+
+const csvColumnOptions = computed(() => [
+  { label: '-- Choisir --', value: '' },
+  ...props.csvColumns.map((col) => ({ label: col, value: col })),
+])
+
+const alignOptions = [
+  { label: 'Gauche', value: 'left' },
+  { label: 'Centre', value: 'center' },
+  { label: 'Droite', value: 'right' },
+]
+
+const verticalAlignOptions = [
+  { label: 'Haut', value: 'top' },
+  { label: 'Milieu', value: 'middle' },
+  { label: 'Bas', value: 'bottom' },
+]
 
 const cardRef = ref(null)
 const selectedFieldIndex = ref(null)
@@ -315,23 +322,6 @@ function startResize(index, event) {
 </script>
 
 <style scoped>
-.field-mapper {
-  margin-top: 1rem;
-}
-
-.field-mapper__hint {
-  font-size: 0.85rem;
-  color: #666;
-  margin-bottom: 1rem;
-}
-
-.field-mapper__workspace {
-  display: flex;
-  gap: 1.5rem;
-  align-items: flex-start;
-  margin-bottom: 1rem;
-}
-
 .field-mapper__card {
   position: relative;
   overflow: hidden;
@@ -408,117 +398,5 @@ function startResize(index, event) {
 
 .field-zone--active .field-zone__resize {
   background: linear-gradient(135deg, transparent 50%, rgba(232, 93, 4, 0.6) 50%);
-}
-
-/* Config panel */
-.field-config {
-  flex: 1;
-  min-width: 220px;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 1rem;
-  max-height: 480px;
-  overflow-y: auto;
-}
-
-.field-config__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #eee;
-}
-
-.fc-group {
-  margin-bottom: 0.5rem;
-}
-
-.fc-group--grow {
-  flex: 1;
-}
-
-.fc-group label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #555;
-  margin-bottom: 0.15rem;
-}
-
-.fc-group input[type='text'],
-.fc-group input[type='number'],
-.fc-group select {
-  width: 100%;
-  padding: 0.3rem 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 0.85rem;
-}
-
-.fc-group input[type='color'] {
-  width: 40px;
-  height: 28px;
-  padding: 0;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.fc-row {
-  display: flex;
-  gap: 0.5rem;
-  align-items: flex-end;
-  margin-bottom: 0.5rem;
-}
-
-.fc-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-.fc-checkbox input {
-  cursor: pointer;
-}
-
-.fc-preview {
-  margin-top: 0.75rem;
-  padding: 0.5rem;
-  background: #f5f5f5;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  min-height: 2rem;
-}
-
-/* Field tags list */
-.field-mapper__list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  align-items: center;
-}
-
-.field-tag {
-  padding: 0.25rem 0.6rem;
-  background: #e8f0fe;
-  border: 1px solid #4a90d9;
-  border-radius: 16px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.1s;
-}
-
-.field-tag:hover {
-  background: #d0e3fc;
-}
-
-.field-tag--active {
-  background: #e85d04;
-  color: white;
-  border-color: #e85d04;
 }
 </style>

@@ -1,63 +1,65 @@
 <template>
-  <div class="card-type-editor">
-    <h3>{{ isEditing ? 'Modifier le type' : 'Nouveau type de carte' }}</h3>
+  <UCard>
+    <template #header>
+      <h3 class="text-lg font-semibold">{{ isEditing ? 'Modifier le type' : 'Nouveau type de carte' }}</h3>
+    </template>
 
-    <div class="form-group">
-      <label>Nom du type</label>
-      <input v-model="form.name" type="text" placeholder="Ex: Monstre, Sort, Objet..." />
-    </div>
+    <div class="space-y-4">
+      <UFormField label="Nom du type">
+        <UInput v-model="form.name" placeholder="Ex: Monstre, Sort, Objet..." icon="i-lucide-tag" />
+      </UFormField>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label>Largeur (px)</label>
-        <input v-model.number="form.width" type="number" min="100" max="1000" />
+      <div class="grid grid-cols-2 gap-4">
+        <UFormField label="Largeur (px)">
+          <UInput v-model.number="form.width" type="number" :min="100" :max="1000" />
+        </UFormField>
+        <UFormField label="Hauteur (px)">
+          <UInput v-model.number="form.height" type="number" :min="100" :max="1400" />
+        </UFormField>
       </div>
-      <div class="form-group">
-        <label>Hauteur (px)</label>
-        <input v-model.number="form.height" type="number" min="100" max="1400" />
+
+      <ImageUploader
+        label="Fond de carte (couche 1)"
+        v-model="form.backgroundImage"
+      />
+
+      <ImageUploader
+        label="Illustration par défaut (couche 2)"
+        v-model="form.illustrationImage"
+      />
+
+      <UFormField label="Colonne CSV pour illustration (optionnel)" hint="Si défini, l'illustration sera prise depuis cette colonne du CSV (URL ou base64)">
+        <USelect
+          v-model="form.illustrationColumn"
+          :items="illustrationColumnOptions"
+          value-key="value"
+        />
+      </UFormField>
+
+      <ImageUploader
+        label="Dessus de carte (couche 3)"
+        v-model="form.overlayImage"
+      />
+
+      <!-- Mapping visuel des zones de contenu -->
+      <FieldMapper
+        :fields="form.contentFields"
+        :card-type="form"
+        :csv-columns="csvColumns"
+        :preview-data="previewData"
+        @update:fields="form.contentFields = $event"
+      />
+    </div>
+
+    <template #footer>
+      <div class="flex gap-3">
+        <UButton color="primary" icon="i-lucide-save" :disabled="!form.name" @click="save">
+          {{ isEditing ? 'Mettre à jour' : 'Créer le type' }}
+        </UButton>
+        <UButton v-if="isEditing" variant="soft" @click="$emit('cancel')">Annuler</UButton>
       </div>
-    </div>
-
-    <ImageUploader
-      label="Fond de carte (couche 1)"
-      v-model="form.backgroundImage"
-    />
-
-    <ImageUploader
-      label="Illustration par défaut (couche 2)"
-      v-model="form.illustrationImage"
-    />
-
-    <div class="form-group">
-      <label>Colonne CSV pour illustration (optionnel)</label>
-      <select v-model="form.illustrationColumn">
-        <option value="">-- Aucune --</option>
-        <option v-for="col in csvColumns" :key="col" :value="col">{{ col }}</option>
-      </select>
-      <small>Si défini, l'illustration sera prise depuis cette colonne du CSV (URL ou base64)</small>
-    </div>
-
-    <ImageUploader
-      label="Dessus de carte (couche 3)"
-      v-model="form.overlayImage"
-    />
-
-    <!-- Mapping visuel des zones de contenu -->
-    <FieldMapper
-      :fields="form.contentFields"
-      :card-type="form"
-      :csv-columns="csvColumns"
-      :preview-data="previewData"
-      @update:fields="form.contentFields = $event"
-    />
-
-    <div class="form-actions">
-      <button class="btn btn--primary" @click="save" :disabled="!form.name">
-        {{ isEditing ? 'Mettre à jour' : 'Créer le type' }}
-      </button>
-      <button v-if="isEditing" class="btn" @click="$emit('cancel')">Annuler</button>
-    </div>
-  </div>
+    </template>
+  </UCard>
 </template>
 
 <script setup>
@@ -89,6 +91,11 @@ const defaultForm = () => ({
 const form = ref(defaultForm())
 
 const csvColumns = computed(() => store.csvColumns)
+
+const illustrationColumnOptions = computed(() => [
+  { label: '-- Aucune --', value: '' },
+  ...store.csvColumns.map((col) => ({ label: col, value: col })),
+])
 
 const previewData = computed(() => {
   if (store.csvData.length > 0) return store.csvData[0]
@@ -137,63 +144,3 @@ function save() {
   emit('saved')
 }
 </script>
-
-<style scoped>
-.card-type-editor {
-  background: #fafafa;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.form-group {
-  margin-bottom: 0.75rem;
-}
-
-.form-group label {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 0.25rem;
-  font-size: 0.9rem;
-}
-
-.form-group input[type='text'],
-.form-group input[type='number'],
-.form-group select {
-  width: 100%;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 0.9rem;
-}
-
-.form-group input[type='color'] {
-  width: 50px;
-  height: 30px;
-  padding: 0;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.form-group small {
-  color: #888;
-  font-size: 0.8rem;
-}
-
-.form-row {
-  display: flex;
-  gap: 1rem;
-}
-
-.form-row .form-group {
-  flex: 1;
-}
-
-.form-actions {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-</style>
