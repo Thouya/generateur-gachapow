@@ -14,6 +14,7 @@ declare module 'vue' {
     CardGallery: typeof import('./src/components/CardGallery.vue')['default']
     CardPreview: typeof import('./src/components/CardPreview.vue')['default']
     CardTypeEditor: typeof import('./src/components/CardTypeEditor.vue')['default']
+    CardTypeHistory: typeof import('./src/components/CardTypeHistory.vue')['default']
     CsvUploader: typeof import('./src/components/CsvUploader.vue')['default']
     FieldMapper: typeof import('./src/components/FieldMapper.vue')['default']
     ImageUploader: typeof import('./src/components/ImageUploader.vue')['default']
