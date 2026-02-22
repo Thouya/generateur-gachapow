@@ -9,7 +9,7 @@
         <UInput v-model="form.name" placeholder="Ex: Monstre, Sort, Objet..." icon="i-lucide-tag" />
       </UFormField>
 
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <UFormField label="Largeur (px)">
           <UInput v-model.number="form.width" type="number" :min="100" :max="1000" />
         </UFormField>

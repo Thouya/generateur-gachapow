@@ -27,7 +27,7 @@
           <UInput
             v-model="renameValue"
             size="xs"
-            class="w-32"
+            class="w-24 sm:w-32"
             autofocus
             @keyup.enter="confirmRename"
             @keyup.escape="renamingId = null"

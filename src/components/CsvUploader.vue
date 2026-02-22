@@ -12,7 +12,7 @@
     <!-- Zone d'upload -->
     <div
       v-if="store.csvData.length === 0"
-      class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-primary-500 transition-colors cursor-pointer"
+      class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 sm:p-8 text-center hover:border-primary-500 transition-colors cursor-pointer"
       @dragover.prevent
       @drop.prevent="onDrop"
       @click="$refs.fileInput.click()"

@@ -109,6 +109,7 @@ function fieldStyle(field) {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   background: #e0e0e0;
   flex-shrink: 0;
+  max-width: 100%;
 }
 
 .card-layer {

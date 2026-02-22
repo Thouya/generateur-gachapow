@@ -5,8 +5,9 @@
       Glisse les zones directement sur la carte pour les positionner. Clique sur une zone pour la configurer.
     </p>
 
-    <div class="flex gap-6 items-start mb-4">
+    <div class="flex flex-col lg:flex-row gap-4 lg:gap-6 items-start mb-4">
       <!-- Carte de prévisualisation interactive -->
+      <div class="w-full lg:w-auto overflow-x-auto">
       <div
         ref="cardRef"
         class="field-mapper__card"
@@ -34,9 +35,10 @@
           ></div>
         </div>
       </div>
+      </div>
 
       <!-- Panneau de configuration du champ sélectionné -->
-      <UCard v-if="selectedField" class="flex-1 min-w-[220px] max-h-[480px] overflow-y-auto">
+      <UCard v-if="selectedField" class="w-full lg:flex-1 lg:min-w-[220px] max-h-[480px] overflow-y-auto">
         <template #header>
           <div class="flex justify-between items-center">
             <strong>{{ selectedField.label || selectedField.key || `Zone ${selectedFieldIndex + 1}` }}</strong>
@@ -58,7 +60,7 @@
             />
           </UFormField>
 
-          <div class="grid grid-cols-4 gap-2">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <UFormField label="X">
               <UInput v-model.number="selectedField.x" type="number" size="sm" />
             </UFormField>
@@ -87,7 +89,7 @@
             </UFormField>
           </div>
 
-          <div class="grid grid-cols-3 gap-2">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <UFormField label="Couleur">
               <input v-model="selectedField.color" type="color" class="w-10 h-8 rounded border border-gray-300 dark:border-gray-600 cursor-pointer" />
             </UFormField>

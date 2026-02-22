@@ -1,9 +1,9 @@
 <template>
   <UCard>
     <template #header>
-      <div class="flex items-center justify-between">
+      <div class="flex flex-wrap items-center justify-between gap-2">
         <h3 class="text-lg font-semibold">Cartes générées</h3>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <UBadge v-if="cards.length > 0" color="primary" variant="subtle">
             {{ cards.length }} cartes
           </UBadge>
@@ -63,7 +63,7 @@
         </div>
       </div>
 
-      <div ref="galleryRef" class="flex flex-wrap gap-6 p-4">
+      <div ref="galleryRef" class="flex flex-wrap gap-3 sm:gap-6 p-2 sm:p-4">
         <div
           v-for="(card, index) in cards"
           :key="card.id"
@@ -80,7 +80,7 @@
             <input
               type="checkbox"
               :checked="selectedIds.has(card.id)"
-              class="w-5 h-5 rounded cursor-pointer accent-primary-500"
+              class="w-6 h-6 rounded cursor-pointer accent-primary-500"
               @change="toggleCard(card.id)"
             />
           </div>
@@ -95,7 +95,7 @@
           <!-- Bouton export individuel (hors mode sélection) -->
           <button
             v-if="!selecting"
-            class="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 dark:bg-gray-800/80 rounded-full p-1.5 shadow-sm hover:shadow cursor-pointer"
+            class="absolute top-2 right-2 z-10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-white/80 dark:bg-gray-800/80 rounded-full p-2 shadow-sm hover:shadow cursor-pointer"
             title="Exporter cette carte en PDF"
             :disabled="exporting"
             @click="exportSingleCard(index)"

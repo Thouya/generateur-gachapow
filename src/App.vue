@@ -2,8 +2,8 @@
   <div class="max-w-5xl mx-auto px-4 py-6">
     <!-- Header -->
     <header class="text-center mb-8 pb-4 border-b-2 border-gray-200 dark:border-gray-700">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-1">Générateur Gachapow</h1>
-      <p class="text-gray-500">Crée et génère tes cartes de jeu de société</p>
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1">Générateur Gachapow</h1>
+      <p class="text-sm sm:text-base text-gray-500">Crée et génère tes cartes de jeu de société</p>
     </header>
 
     <!-- Chargement -->
