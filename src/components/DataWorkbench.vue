@@ -81,6 +81,11 @@
                   </div>
                 </th>
                 <th
+                  class="px-2 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 w-16"
+                >
+                  Qté
+                </th>
+                <th
                   class="px-2 py-2 border-b border-gray-200 dark:border-gray-700 w-8"
                 />
               </tr>
@@ -99,6 +104,7 @@
                     class="w-full bg-transparent text-xs px-1 py-0.5 outline-none border border-transparent focus:border-primary-400 rounded placeholder:text-gray-400"
                   />
                 </td>
+                <td class="px-2 py-1 border-b border-gray-200 dark:border-gray-700" />
                 <td class="px-2 py-1 border-b border-gray-200 dark:border-gray-700" />
               </tr>
             </thead>
@@ -148,6 +154,16 @@
                     >{{ row[col] ?? '' }}</span>
                   </template>
                 </td>
+                <!-- Quantity -->
+                <td class="px-2 py-1.5">
+                  <input
+                    type="number"
+                    min="1"
+                    :value="store.csvData[row._index].__quantity || 1"
+                    class="w-14 bg-white dark:bg-gray-900 text-sm text-center px-1 py-0.5 outline-none border border-gray-300 dark:border-gray-600 focus:border-primary-400 rounded"
+                    @change="e => updateQuantity(row._index, e.target.value)"
+                  />
+                </td>
                 <!-- Delete row -->
                 <td class="px-1 py-1.5">
                   <UButton
@@ -162,7 +178,7 @@
               <!-- Empty state -->
               <tr v-if="paginatedData.length === 0">
                 <td
-                  :colspan="columns.length + 2"
+                  :colspan="columns.length + 3"
                   class="text-center text-gray-400 text-sm py-8"
                 >
                   {{ store.csvData.length === 0 ? 'Aucune donnée.' : 'Aucun résultat pour ce filtre.' }}
@@ -484,6 +500,15 @@ function addColumn() {
   store.addCsvColumn(name)
   newColumnName.value = ''
   showAddColumn.value = false
+}
+
+// ── Quantité ────────────────────────────────────────
+function updateQuantity(rowIndex, value) {
+  const qty = Math.max(1, parseInt(value) || 1)
+  const project = store.selectedProject
+  if (!project) return
+  project.csvData[rowIndex].__quantity = qty
+  store.syncCsvCell(rowIndex)
 }
 
 // ── Navigation preview ───────────────────────────────

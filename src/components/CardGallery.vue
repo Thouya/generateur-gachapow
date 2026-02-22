@@ -5,7 +5,7 @@
         <h3 class="text-lg font-semibold">Cartes générées</h3>
         <div class="flex flex-wrap items-center gap-2">
           <UBadge v-if="cards.length > 0" color="primary" variant="subtle">
-            {{ cards.length }} cartes
+            {{ totalWithQuantities }} carte{{ totalWithQuantities > 1 ? 's' : '' }}
           </UBadge>
 
           <!-- Bouton mode sélection -->
@@ -72,6 +72,14 @@
         >
           <CardPreview :card-type="getCardType(card.cardTypeId)" :card-data="card.data" />
 
+          <!-- Badge quantité -->
+          <div
+            v-if="getQuantity(card) > 1 && !selecting"
+            class="absolute top-2 left-2 z-10 bg-primary-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow"
+          >
+            &times;{{ getQuantity(card) }}
+          </div>
+
           <!-- Checkbox en mode sélection -->
           <div
             v-if="selecting"
@@ -125,9 +133,16 @@ const selectedIds = reactive(new Set())
 
 const cards = computed(() => store.generatedCards)
 
+const totalWithQuantities = computed(() =>
+  cards.value.reduce((sum, c) => sum + (c.data?.__quantity || 1), 0)
+)
+
 const exportLabel = computed(() => {
   if (selecting.value && selectedIds.size > 0) {
-    return `Exporter ${selectedIds.size} carte${selectedIds.size > 1 ? 's' : ''}`
+    const selTotal = cards.value
+      .filter((c) => selectedIds.has(c.id))
+      .reduce((sum, c) => sum + (c.data?.__quantity || 1), 0)
+    return `Exporter ${selTotal} carte${selTotal > 1 ? 's' : ''}`
   }
   return 'Exporter en PDF'
 })
@@ -136,9 +151,26 @@ function getCardType(cardTypeId) {
   return store.cardTypes.find((t) => t.id === cardTypeId) || {}
 }
 
+function getQuantity(card) {
+  return card.data?.__quantity || 1
+}
+
 function getCardElements() {
   if (!galleryRef.value) return []
   return Array.from(galleryRef.value.querySelectorAll('.card-preview'))
+}
+
+function getExportElements(filterFn) {
+  const allElements = getCardElements()
+  const result = []
+  cards.value.forEach((card, i) => {
+    if (filterFn && !filterFn(card)) return
+    const qty = getQuantity(card)
+    for (let q = 0; q < qty; q++) {
+      result.push(allElements[i])
+    }
+  })
+  return result
 }
 
 // --- Sélection ---
@@ -187,18 +219,14 @@ async function runExport(elements, fileName) {
 }
 
 function exportPdf() {
-  const allElements = getCardElements()
-  if (allElements.length === 0) return
-
   if (selecting.value && selectedIds.size > 0) {
-    // Exporter uniquement les cartes sélectionnées
-    const selectedElements = cards.value
-      .map((card, i) => (selectedIds.has(card.id) ? allElements[i] : null))
-      .filter(Boolean)
-    runExport(selectedElements, `cartes-selection-${selectedIds.size}.pdf`)
+    const elements = getExportElements((card) => selectedIds.has(card.id))
+    if (elements.length === 0) return
+    runExport(elements, `cartes-selection-${elements.length}.pdf`)
   } else {
-    // Exporter toutes les cartes
-    runExport(allElements, 'cartes-gachapow.pdf')
+    const elements = getExportElements()
+    if (elements.length === 0) return
+    runExport(elements, 'cartes-gachapow.pdf')
   }
 }
 
@@ -206,15 +234,20 @@ async function exportSingleCard(index) {
   const elements = getCardElements()
   if (!elements[index]) return
 
+  const card = cards.value[index]
+  const qty = card ? getQuantity(card) : 1
+  const repeated = Array(qty).fill(elements[index])
+
   exporting.value = true
   exportProgress.value = 0
-  exportProgressText.value = '1 / 1'
+  exportProgressText.value = `0 / ${repeated.length}`
 
   try {
-    await exportCardsToPdf([elements[index]], {
+    await exportCardsToPdf(repeated, {
       fileName: `carte-${index + 1}.pdf`,
-      onProgress() {
-        exportProgress.value = 100
+      onProgress(current, total) {
+        exportProgress.value = Math.round((current / total) * 100)
+        exportProgressText.value = `${current} / ${total}`
       },
     })
   } catch (err) {
