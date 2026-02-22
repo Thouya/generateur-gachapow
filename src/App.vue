@@ -79,46 +79,9 @@
         <CsvUploader />
       </section>
 
-      <!-- Actions de génération -->
-      <section v-if="store.selectedCardType && store.csvData.length > 0" class="mb-8">
-        <UCard>
-          <template #header>
-            <h3 class="text-lg font-semibold">Génération</h3>
-          </template>
-          <p class="text-sm mb-3">
-            Type : <strong>{{ store.selectedCardType.name }}</strong> |
-            Données : <strong>{{ store.csvData.length }} lignes</strong>
-          </p>
-          <div class="flex gap-2 flex-wrap">
-            <UButton color="primary" icon="i-lucide-sparkles" @click="store.generateCards()">
-              Générer les cartes
-            </UButton>
-            <UButton
-              v-if="currentTypeCards.length > 0"
-              color="error"
-              variant="soft"
-              icon="i-lucide-trash-2"
-              @click="store.clearGeneratedCards(store.selectedCardTypeId)"
-            >
-              Supprimer les cartes
-            </UButton>
-          </div>
-        </UCard>
-      </section>
-
-      <!-- Prévisualisation en direct -->
-      <section v-if="store.selectedCardType" class="mb-8">
-        <UCard>
-          <template #header>
-            <h3 class="text-lg font-semibold">Prévisualisation - {{ store.selectedCardType.name }}</h3>
-          </template>
-          <div class="flex justify-center p-6 bg-gray-100 dark:bg-gray-800 rounded-lg">
-            <CardPreview
-              :card-type="store.selectedCardType"
-              :card-data="previewData"
-            />
-          </div>
-        </UCard>
+      <!-- Atelier de données (table éditable + aperçu live) -->
+      <section v-if="store.csvData.length > 0" class="mb-8">
+        <DataWorkbench />
       </section>
 
       <!-- Galerie des cartes générées -->
@@ -153,7 +116,7 @@ import AuthGate from './components/AuthGate.vue'
 import ProjectManager from './components/ProjectManager.vue'
 import CardTypeEditor from './components/CardTypeEditor.vue'
 import CsvUploader from './components/CsvUploader.vue'
-import CardPreview from './components/CardPreview.vue'
+import DataWorkbench from './components/DataWorkbench.vue'
 import CardGallery from './components/CardGallery.vue'
 import CardTypeHistory from './components/CardTypeHistory.vue'
 
@@ -171,17 +134,6 @@ onMounted(() => {
 watch(authUser, (user) => {
   if (user) store.init()
 })
-
-const previewData = computed(() => {
-  if (store.csvData.length > 0) {
-    return store.csvData[0]
-  }
-  return {}
-})
-
-const currentTypeCards = computed(() =>
-  store.generatedCards.filter((c) => c.cardTypeId === store.selectedCardTypeId)
-)
 
 function editType(cardType) {
   editingCardType.value = { ...cardType, contentFields: cardType.contentFields?.map((f) => ({ ...f })) }

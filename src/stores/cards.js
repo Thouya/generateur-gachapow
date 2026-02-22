@@ -391,6 +391,71 @@ export const useCardsStore = defineStore('cards', () => {
     )
   }
 
+  // ── Édition CSV ─────────────────────────────────────
+  function syncCsvCell(rowIndex) {
+    const project = selectedProject.value
+    if (!project) return
+
+    // Mettre à jour les cartes générées qui référencent cette ligne
+    project.generatedCards.forEach((gc) => {
+      const idx = parseInt(gc.id.split('-').pop())
+      if (idx === rowIndex) {
+        gc.data = { ...project.csvData[rowIndex] }
+        db(supabase.from('generated_cards').update({ data: gc.data }).eq('id', gc.id))
+      }
+    })
+
+    db(
+      supabase
+        .from('projects')
+        .update({ csv_data: project.csvData })
+        .eq('id', project.id)
+    )
+  }
+
+  function addCsvRow() {
+    const project = selectedProject.value
+    if (!project) return
+    const newRow = {}
+    project.csvColumns.forEach((col) => {
+      newRow[col] = ''
+    })
+    project.csvData.push(newRow)
+    db(
+      supabase
+        .from('projects')
+        .update({ csv_data: project.csvData })
+        .eq('id', project.id)
+    )
+  }
+
+  function deleteCsvRow(rowIndex) {
+    const project = selectedProject.value
+    if (!project) return
+    project.csvData.splice(rowIndex, 1)
+    db(
+      supabase
+        .from('projects')
+        .update({ csv_data: project.csvData })
+        .eq('id', project.id)
+    )
+  }
+
+  function addCsvColumn(name) {
+    const project = selectedProject.value
+    if (!project || !name || project.csvColumns.includes(name)) return
+    project.csvColumns.push(name)
+    project.csvData.forEach((row) => {
+      row[name] = ''
+    })
+    db(
+      supabase
+        .from('projects')
+        .update({ csv_data: project.csvData, csv_columns: project.csvColumns })
+        .eq('id', project.id)
+    )
+  }
+
   // ── Génération ──────────────────────────────────────
   function generateCards() {
     if (!selectedProject.value || !selectedCardType.value || csvData.value.length === 0) return
@@ -495,5 +560,9 @@ export const useCardsStore = defineStore('cards', () => {
     resetAll,
     cardTypeHistory,
     loadHistory,
+    syncCsvCell,
+    addCsvRow,
+    deleteCsvRow,
+    addCsvColumn,
   }
 })
