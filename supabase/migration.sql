@@ -8,6 +8,7 @@
 CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
+  user_id UUID REFERENCES auth.users(id),
   csv_data JSONB DEFAULT '[]'::jsonb,
   csv_columns JSONB DEFAULT '[]'::jsonb,
   selected_card_type_id TEXT,
@@ -38,20 +39,6 @@ CREATE TABLE IF NOT EXISTS generated_cards (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Index pour les requêtes fréquentes
-CREATE INDEX IF NOT EXISTS idx_card_types_project ON card_types(project_id);
-CREATE INDEX IF NOT EXISTS idx_generated_cards_project ON generated_cards(project_id);
-CREATE INDEX IF NOT EXISTS idx_generated_cards_type ON generated_cards(card_type_id);
-
--- RLS : accès libre (pas d'authentification pour l'instant)
-ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
-ALTER TABLE card_types ENABLE ROW LEVEL SECURITY;
-ALTER TABLE generated_cards ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "allow_all_projects" ON projects FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "allow_all_card_types" ON card_types FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "allow_all_generated_cards" ON generated_cards FOR ALL TO anon USING (true) WITH CHECK (true);
-
 -- Table d'historique des modifications de types de cartes
 CREATE TABLE IF NOT EXISTS card_type_history (
   id TEXT PRIMARY KEY,
@@ -63,8 +50,35 @@ CREATE TABLE IF NOT EXISTS card_type_history (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Index pour les requêtes fréquentes
+CREATE INDEX IF NOT EXISTS idx_card_types_project ON card_types(project_id);
+CREATE INDEX IF NOT EXISTS idx_generated_cards_project ON generated_cards(project_id);
+CREATE INDEX IF NOT EXISTS idx_generated_cards_type ON generated_cards(card_type_id);
 CREATE INDEX IF NOT EXISTS idx_history_card_type ON card_type_history(card_type_id);
 CREATE INDEX IF NOT EXISTS idx_history_project ON card_type_history(project_id);
 
+-- RLS : chaque utilisateur ne voit que ses propres données
+ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE card_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE generated_cards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE card_type_history ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "allow_all_history" ON card_type_history FOR ALL TO anon USING (true) WITH CHECK (true);
+
+CREATE POLICY "user_projects" ON projects
+  FOR ALL TO authenticated
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "user_card_types" ON card_types
+  FOR ALL TO authenticated
+  USING (project_id IN (SELECT id FROM projects WHERE user_id = auth.uid()))
+  WITH CHECK (project_id IN (SELECT id FROM projects WHERE user_id = auth.uid()));
+
+CREATE POLICY "user_generated_cards" ON generated_cards
+  FOR ALL TO authenticated
+  USING (project_id IN (SELECT id FROM projects WHERE user_id = auth.uid()))
+  WITH CHECK (project_id IN (SELECT id FROM projects WHERE user_id = auth.uid()));
+
+CREATE POLICY "user_history" ON card_type_history
+  FOR ALL TO authenticated
+  USING (project_id IN (SELECT id FROM projects WHERE user_id = auth.uid()))
+  WITH CHECK (project_id IN (SELECT id FROM projects WHERE user_id = auth.uid()));

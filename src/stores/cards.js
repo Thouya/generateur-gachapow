@@ -88,6 +88,7 @@ export const useCardsStore = defineStore('cards', () => {
   const selectedProjectId = ref(null)
   const loading = ref(false)
   const cardTypeHistory = ref([])
+  const userId = ref(null)
 
   // ── Computed ────────────────────────────────────────
   const selectedProject = computed(() =>
@@ -106,6 +107,11 @@ export const useCardsStore = defineStore('cards', () => {
   async function init() {
     loading.value = true
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      userId.value = session?.user?.id || null
+
       const [{ data: pRows }, { data: ctRows }, { data: gcRows }] = await Promise.all([
         supabase.from('projects').select('*'),
         supabase.from('card_types').select('*'),
@@ -160,6 +166,7 @@ export const useCardsStore = defineStore('cards', () => {
       const { error: pErr } = await supabase.from('projects').insert({
         id: p.id,
         name: p.name,
+        user_id: userId.value,
         csv_data: p.csvData || [],
         csv_columns: p.csvColumns || [],
         selected_card_type_id: p.selectedCardTypeId,
@@ -208,7 +215,7 @@ export const useCardsStore = defineStore('cards', () => {
     projects.value.push(project)
     selectedProjectId.value = id
     localStorage.setItem('gachapow-selected-project', id)
-    db(supabase.from('projects').insert({ id, name }))
+    db(supabase.from('projects').insert({ id, name, user_id: userId.value }))
     return id
   }
 

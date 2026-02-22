@@ -1,12 +1,28 @@
 <template>
-  <div class="max-w-5xl mx-auto px-4 py-6">
+  <!-- Chargement auth -->
+  <div v-if="authLoading" class="min-h-screen flex items-center justify-center">
+    <UIcon name="i-lucide-loader-2" class="text-4xl animate-spin text-gray-400" />
+  </div>
+
+  <!-- Non connecté -->
+  <AuthGate v-else-if="!authUser" />
+
+  <!-- Connecté -->
+  <div v-else class="max-w-5xl mx-auto px-4 py-6">
     <!-- Header -->
-    <header class="text-center mb-8 pb-4 border-b-2 border-gray-200 dark:border-gray-700">
+    <header class="relative text-center mb-8 pb-4 border-b-2 border-gray-200 dark:border-gray-700">
       <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1">Générateur Gachapow</h1>
       <p class="text-sm sm:text-base text-gray-500">Crée et génère tes cartes de jeu de société</p>
+      <UButton
+        class="absolute top-0 right-0"
+        size="sm"
+        variant="ghost"
+        icon="i-lucide-log-out"
+        @click="handleLogout"
+      />
     </header>
 
-    <!-- Chargement -->
+    <!-- Chargement données -->
     <div v-if="store.loading" class="text-center text-gray-400 py-16">
       <UIcon name="i-lucide-loader-2" class="text-4xl animate-spin mb-3" />
       <p>Chargement des données…</p>
@@ -130,8 +146,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useAuth } from './composables/useAuth.js'
 import { useCardsStore } from './stores/cards.js'
+import AuthGate from './components/AuthGate.vue'
 import ProjectManager from './components/ProjectManager.vue'
 import CardTypeEditor from './components/CardTypeEditor.vue'
 import CsvUploader from './components/CsvUploader.vue'
@@ -139,13 +157,19 @@ import CardPreview from './components/CardPreview.vue'
 import CardGallery from './components/CardGallery.vue'
 import CardTypeHistory from './components/CardTypeHistory.vue'
 
+const { user: authUser, loading: authLoading, init: initAuth, signOut } = useAuth()
 const store = useCardsStore()
 const editingCardType = ref(null)
 const historyOpen = ref(false)
 const historyCardType = ref(null)
 
 onMounted(() => {
-  store.init()
+  initAuth()
+})
+
+// Charger les données du store quand l'utilisateur est authentifié
+watch(authUser, (user) => {
+  if (user) store.init()
 })
 
 const previewData = computed(() => {
@@ -166,6 +190,10 @@ function editType(cardType) {
 function openHistory(ct) {
   historyCardType.value = ct
   historyOpen.value = true
+}
+
+function handleLogout() {
+  signOut()
 }
 
 function confirmReset() {
