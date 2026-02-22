@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AuthGate: typeof import('./src/components/AuthGate.vue')['default']
     CardGallery: typeof import('./src/components/CardGallery.vue')['default']
     CardPreview: typeof import('./src/components/CardPreview.vue')['default']
     CardTypeEditor: typeof import('./src/components/CardTypeEditor.vue')['default']
