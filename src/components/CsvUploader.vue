@@ -2,7 +2,10 @@
   <UCard>
     <template #header>
       <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold">Données CSV</h3>
+        <div class="flex items-center gap-2">
+          <UIcon name="i-lucide-file-spreadsheet" class="text-lg text-[var(--ui-primary)]" />
+          <h3 class="text-lg font-semibold">Données CSV</h3>
+        </div>
         <UBadge v-if="store.csvData.length > 0" color="primary" variant="subtle">
           {{ store.csvData.length }} lignes
         </UBadge>
@@ -12,7 +15,7 @@
     <!-- Zone d'upload -->
     <div
       v-if="store.csvData.length === 0"
-      class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 sm:p-8 text-center hover:border-primary-500 transition-colors cursor-pointer"
+      class="border-2 border-dashed border-[var(--ui-border)] rounded-[var(--ui-radius)] p-4 sm:p-8 text-center hover:border-[var(--ui-primary)] transition-colors cursor-pointer"
       @dragover.prevent
       @drop.prevent="onDrop"
       @click="$refs.fileInput.click()"
@@ -24,8 +27,8 @@
         class="hidden"
         @change="onFileChange"
       />
-      <UIcon name="i-lucide-file-spreadsheet" class="text-4xl text-gray-400 mb-3" />
-      <p class="text-gray-500">Glissez un fichier CSV ici ou cliquez pour parcourir</p>
+      <UIcon name="i-lucide-upload" class="text-4xl text-[var(--ui-text-dimmed)] mb-3" />
+      <p class="text-[var(--ui-text-muted)]">Glissez un fichier CSV ici ou cliquez pour parcourir</p>
     </div>
 
     <!-- Données chargées -->
@@ -36,14 +39,14 @@
         </UBadge>
       </div>
 
-      <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 mb-3">
+      <div class="overflow-x-auto rounded-[var(--ui-radius)] border border-[var(--ui-border)] mb-3">
         <table class="w-full text-sm">
           <thead>
-            <tr class="bg-gray-50 dark:bg-gray-800">
+            <tr class="bg-[var(--ui-bg-elevated)]">
               <th
                 v-for="col in store.csvColumns"
                 :key="col"
-                class="px-3 py-2 text-left font-medium text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700"
+                class="px-3 py-2 text-left font-medium text-[var(--ui-text-muted)] border-b border-[var(--ui-border)]"
               >
                 {{ col }}
               </th>
@@ -53,12 +56,12 @@
             <tr
               v-for="(row, i) in previewRows"
               :key="i"
-              class="border-b border-gray-100 dark:border-gray-800 last:border-0"
+              class="border-b border-[var(--ui-border-accented)]/50 last:border-0"
             >
               <td
                 v-for="col in store.csvColumns"
                 :key="col"
-                class="px-3 py-2 max-w-[150px] truncate text-gray-700 dark:text-gray-300"
+                class="px-3 py-2 max-w-[150px] truncate"
               >
                 {{ row[col] }}
               </td>
@@ -67,8 +70,8 @@
         </table>
       </div>
 
-      <p v-if="store.csvData.length > 5" class="text-xs text-gray-400 mb-3">
-        ... et {{ store.csvData.length - 5 }} autres lignes
+      <p v-if="store.csvData.length > 5" class="text-xs text-[var(--ui-text-dimmed)] mb-3">
+        … et {{ store.csvData.length - 5 }} autres lignes
       </p>
 
       <UButton variant="soft" color="error" size="sm" icon="i-lucide-trash-2" @click="store.clearCsvData()">

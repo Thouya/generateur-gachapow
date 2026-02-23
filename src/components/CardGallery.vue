@@ -2,7 +2,10 @@
   <UCard>
     <template #header>
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <h3 class="text-lg font-semibold">Cartes générées</h3>
+        <div class="flex items-center gap-2">
+          <UIcon name="i-lucide-layers" class="text-lg text-[var(--ui-primary)]" />
+          <h3 class="text-lg font-semibold">Cartes générées</h3>
+        </div>
         <div class="flex flex-wrap items-center gap-2">
           <UBadge v-if="cards.length > 0" color="primary" variant="subtle">
             {{ totalWithQuantities }} carte{{ totalWithQuantities > 1 ? 's' : '' }}
@@ -13,7 +16,7 @@
             v-if="cards.length > 0"
             :icon="selecting ? 'i-lucide-x' : 'i-lucide-check-square'"
             :label="selecting ? 'Annuler' : 'Sélectionner'"
-            :color="selecting ? 'neutral' : 'neutral'"
+            color="neutral"
             variant="soft"
             size="sm"
             :disabled="exporting"
@@ -36,46 +39,46 @@
       </div>
     </template>
 
-    <div v-if="cards.length === 0" class="text-center text-gray-400 py-8">
+    <div v-if="cards.length === 0" class="text-center text-[var(--ui-text-dimmed)] py-8">
       <UIcon name="i-lucide-layers" class="text-4xl mb-3" />
       <p>Aucune carte générée. Sélectionne un type de carte, charge un CSV, puis clique sur "Générer".</p>
     </div>
 
     <template v-else>
       <!-- Barre sélection -->
-      <div v-if="selecting" class="px-4 pb-2 flex items-center gap-2">
+      <div v-if="selecting" class="pb-3 flex items-center gap-2">
         <UButton
           size="xs"
           variant="ghost"
           :label="selectedIds.size === cards.length ? 'Tout désélectionner' : 'Tout sélectionner'"
           @click="toggleAll"
         />
-        <span v-if="selectedIds.size > 0" class="text-sm text-gray-500">
+        <span v-if="selectedIds.size > 0" class="text-sm text-[var(--ui-text-muted)]">
           {{ selectedIds.size }} sélectionnée{{ selectedIds.size > 1 ? 's' : '' }}
         </span>
       </div>
 
       <!-- Barre de progression export -->
-      <div v-if="exporting" class="px-4 pb-3">
+      <div v-if="exporting" class="pb-3">
         <div class="flex items-center gap-3">
           <UProgress :value="exportProgress" class="flex-1" />
-          <span class="text-sm text-gray-500 whitespace-nowrap">{{ exportProgressText }}</span>
+          <span class="text-sm text-[var(--ui-text-muted)] whitespace-nowrap">{{ exportProgressText }}</span>
         </div>
       </div>
 
-      <div ref="galleryRef" class="flex flex-wrap gap-3 sm:gap-6 p-2 sm:p-4">
+      <div ref="galleryRef" class="flex flex-wrap gap-3 sm:gap-6">
         <div
           v-for="(card, index) in cards"
           :key="card.id"
           class="flex-shrink-0 relative group"
-          :class="{ 'ring-3 ring-primary-500 rounded-xl': selecting && selectedIds.has(card.id) }"
+          :class="{ 'ring-3 ring-[var(--ui-primary)] rounded-xl': selecting && selectedIds.has(card.id) }"
         >
           <CardPreview :card-type="getCardType(card.cardTypeId)" :card-data="card.data" />
 
           <!-- Badge quantité -->
           <div
             v-if="getQuantity(card) > 1 && !selecting"
-            class="absolute top-2 left-2 z-10 bg-primary-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow"
+            class="absolute top-2 left-2 z-10 bg-[var(--ui-primary)] text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow"
           >
             &times;{{ getQuantity(card) }}
           </div>
@@ -88,7 +91,7 @@
             <input
               type="checkbox"
               :checked="selectedIds.has(card.id)"
-              class="w-6 h-6 rounded cursor-pointer accent-primary-500"
+              class="w-6 h-6 rounded cursor-pointer accent-[var(--ui-primary)]"
               @change="toggleCard(card.id)"
             />
           </div>
@@ -100,15 +103,15 @@
             @click="toggleCard(card.id)"
           />
 
-          <!-- Bouton export individuel (hors mode sélection) -->
+          <!-- Bouton export individuel -->
           <button
             v-if="!selecting"
-            class="absolute top-2 right-2 z-10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-white/80 dark:bg-gray-800/80 rounded-full p-2 shadow-sm hover:shadow cursor-pointer"
+            class="absolute top-2 right-2 z-10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-[var(--ui-bg)]/80 rounded-full p-2 shadow-sm hover:shadow cursor-pointer"
             title="Exporter cette carte en PDF"
             :disabled="exporting"
             @click="exportSingleCard(index)"
           >
-            <UIcon name="i-lucide-download" class="text-gray-700 dark:text-gray-200" />
+            <UIcon name="i-lucide-download" />
           </button>
         </div>
       </div>

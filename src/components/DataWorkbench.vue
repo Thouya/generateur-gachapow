@@ -1,125 +1,129 @@
 <template>
-  <div class="space-y-4">
-    <!-- Toolbar -->
-    <div class="flex items-center justify-between gap-3 flex-wrap">
-      <h3 class="text-xl font-semibold">Atelier de données</h3>
-      <div class="flex items-center gap-2 flex-wrap">
-        <UInput
-          v-model="searchQuery"
-          placeholder="Rechercher…"
-          icon="i-lucide-search"
-          size="sm"
-          class="w-48"
-        />
-        <UButton
-          size="sm"
-          variant="soft"
-          icon="i-lucide-history"
-          @click="showHistory = !showHistory"
-        >
-          {{ editHistory.length }}
-        </UButton>
-        <UButton size="sm" variant="soft" icon="i-lucide-plus" @click="addRow">
-          Ligne
-        </UButton>
-        <UButton
-          v-if="!showAddColumn"
-          size="sm"
-          variant="soft"
-          icon="i-lucide-columns-3"
-          @click="showAddColumn = true"
-        >
-          Colonne
-        </UButton>
-        <div v-else class="flex items-center gap-1">
+  <UCard>
+    <template #header>
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div class="flex items-center gap-2">
+          <UIcon name="i-lucide-table-2" class="text-lg text-[var(--ui-primary)]" />
+          <h3 class="text-lg font-semibold">Atelier de données</h3>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
           <UInput
-            v-model="newColumnName"
-            placeholder="Nom…"
+            v-model="searchQuery"
+            placeholder="Rechercher…"
+            icon="i-lucide-search"
             size="sm"
-            class="w-28"
-            @keyup.enter="addColumn"
+            class="w-48"
           />
-          <UButton size="sm" color="primary" icon="i-lucide-check" @click="addColumn" />
           <UButton
             size="sm"
-            variant="ghost"
-            icon="i-lucide-x"
-            @click="showAddColumn = false; newColumnName = ''"
-          />
+            variant="soft"
+            icon="i-lucide-history"
+            @click="showHistory = !showHistory"
+          >
+            {{ editHistory.length }}
+          </UButton>
+          <UButton size="sm" variant="soft" icon="i-lucide-plus" @click="addRow">
+            Ligne
+          </UButton>
+          <UButton
+            v-if="!showAddColumn"
+            size="sm"
+            variant="soft"
+            icon="i-lucide-columns-3"
+            @click="showAddColumn = true"
+          >
+            Colonne
+          </UButton>
+          <div v-else class="flex items-center gap-1">
+            <UInput
+              v-model="newColumnName"
+              placeholder="Nom…"
+              size="sm"
+              class="w-28"
+              @keyup.enter="addColumn"
+            />
+            <UButton size="sm" color="primary" icon="i-lucide-check" @click="addColumn" />
+            <UButton
+              size="sm"
+              variant="ghost"
+              icon="i-lucide-x"
+              @click="showAddColumn = false; newColumnName = ''"
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </template>
 
     <!-- Content: table + preview -->
     <div class="flex flex-col lg:flex-row gap-4">
       <!-- Table -->
       <div class="flex-1 min-w-0">
         <div
-          class="overflow-x-auto overflow-y-auto max-h-[600px] border rounded-lg border-gray-200 dark:border-gray-700"
+          class="overflow-x-auto overflow-y-auto max-h-[600px] border rounded-[var(--ui-radius)] border-[var(--ui-border)]"
         >
           <table class="w-full text-sm border-collapse">
             <thead class="sticky top-0 z-10">
               <!-- Header row -->
-              <tr class="bg-gray-100 dark:bg-gray-800">
+              <tr class="bg-[var(--ui-bg-elevated)]">
                 <th
-                  class="px-2 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 w-10"
+                  class="px-2 py-2 text-left text-xs font-semibold text-[var(--ui-text-dimmed)] uppercase tracking-wider border-b border-[var(--ui-border)] w-10"
                 >
                   #
                 </th>
                 <th
                   v-for="col in columns"
                   :key="col"
-                  class="px-2 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:text-gray-900 dark:hover:text-gray-200 select-none"
+                  class="px-2 py-2 text-left text-xs font-semibold text-[var(--ui-text-dimmed)] uppercase tracking-wider border-b border-[var(--ui-border)] cursor-pointer hover:text-[var(--ui-text)] select-none"
                   @click="toggleSort(col)"
                 >
                   <div class="flex items-center gap-1">
                     {{ col }}
                     <span
                       v-if="sortColumn === col"
-                      class="text-primary-500"
+                      class="text-[var(--ui-primary)]"
                     >{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
                   </div>
                 </th>
                 <th
-                  class="px-2 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 w-16"
+                  class="px-2 py-2 text-left text-xs font-semibold text-[var(--ui-text-dimmed)] uppercase tracking-wider border-b border-[var(--ui-border)] w-16"
                 >
                   Qté
                 </th>
                 <th
-                  class="px-2 py-2 border-b border-gray-200 dark:border-gray-700 w-8"
+                  class="px-2 py-2 border-b border-[var(--ui-border)] w-8"
                 />
               </tr>
               <!-- Filter row -->
-              <tr class="bg-gray-50 dark:bg-gray-800/50">
-                <td class="px-2 py-1 border-b border-gray-200 dark:border-gray-700" />
+              <tr class="bg-[var(--ui-bg-elevated)]/50">
+                <td class="px-2 py-1 border-b border-[var(--ui-border)]" />
                 <td
                   v-for="col in columns"
                   :key="'f-' + col"
-                  class="px-1 py-1 border-b border-gray-200 dark:border-gray-700"
+                  class="px-1 py-1 border-b border-[var(--ui-border)]"
                 >
                   <input
                     v-model="columnFilters[col]"
                     type="text"
                     :placeholder="'Filtrer…'"
-                    class="w-full bg-transparent text-xs px-1 py-0.5 outline-none border border-transparent focus:border-primary-400 rounded placeholder:text-gray-400"
+                    class="w-full bg-transparent text-xs px-1 py-0.5 outline-none border border-transparent focus:border-[var(--ui-primary)] rounded-[var(--ui-radius)] placeholder:text-[var(--ui-text-dimmed)]"
                   />
                 </td>
-                <td class="px-2 py-1 border-b border-gray-200 dark:border-gray-700" />
-                <td class="px-2 py-1 border-b border-gray-200 dark:border-gray-700" />
+                <td class="px-2 py-1 border-b border-[var(--ui-border)]" />
+                <td class="px-2 py-1 border-b border-[var(--ui-border)]" />
               </tr>
             </thead>
             <tbody>
               <tr
                 v-for="row in paginatedData"
                 :key="row._index"
-                class="border-b border-gray-100 dark:border-gray-800 transition-colors"
+                class="border-b border-[var(--ui-border-accented)]/50 transition-colors"
                 :class="selectedRowIndex === row._index
-                  ? 'bg-primary-50 dark:bg-primary-950'
-                  : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'"
+                  ? 'bg-[var(--ui-primary)]/5'
+                  : 'hover:bg-[var(--ui-bg-elevated)]/50'"
                 @click="selectRow(row._index)"
               >
                 <!-- Row number -->
-                <td class="px-2 py-1.5 text-xs text-gray-400 font-mono">
+                <td class="px-2 py-1.5 text-xs text-[var(--ui-text-dimmed)] font-mono">
                   {{ row._index + 1 }}
                 </td>
                 <!-- Data cells -->
@@ -134,7 +138,7 @@
                     v-if="editingCell?.row === row._index && editingCell?.col === col"
                     :value="store.csvData[row._index][col] ?? ''"
                     :ref="el => el && el.focus()"
-                    class="w-full bg-white dark:bg-gray-900 text-sm px-1 py-0.5 outline-none border border-primary-400 rounded min-w-[60px]"
+                    class="w-full bg-[var(--ui-bg)] text-sm px-1 py-0.5 outline-none border border-[var(--ui-primary)] rounded-[var(--ui-radius)] min-w-[60px]"
                     @input="e => handleEditInput(row._index, col, e.target.value)"
                     @blur="saveEdit"
                     @keydown.enter="saveEdit"
@@ -145,7 +149,7 @@
                     <img
                       v-if="isImageValue(row[col])"
                       :src="row[col]"
-                      class="h-8 w-8 object-cover rounded"
+                      class="h-8 w-8 object-cover rounded-[var(--ui-radius)]"
                     />
                     <span
                       v-else
@@ -160,7 +164,7 @@
                     type="number"
                     min="1"
                     :value="store.csvData[row._index].__quantity || 1"
-                    class="w-14 bg-white dark:bg-gray-900 text-sm text-center px-1 py-0.5 outline-none border border-gray-300 dark:border-gray-600 focus:border-primary-400 rounded"
+                    class="w-14 bg-[var(--ui-bg)] text-sm text-center px-1 py-0.5 outline-none border border-[var(--ui-border)] focus:border-[var(--ui-primary)] rounded-[var(--ui-radius)]"
                     @change="e => updateQuantity(row._index, e.target.value)"
                   />
                 </td>
@@ -179,7 +183,7 @@
               <tr v-if="paginatedData.length === 0">
                 <td
                   :colspan="columns.length + 3"
-                  class="text-center text-gray-400 text-sm py-8"
+                  class="text-center text-[var(--ui-text-dimmed)] text-sm py-8"
                 >
                   {{ store.csvData.length === 0 ? 'Aucune donnée.' : 'Aucun résultat pour ce filtre.' }}
                 </td>
@@ -190,7 +194,7 @@
 
         <!-- Pagination + info -->
         <div class="flex items-center justify-between mt-3">
-          <span class="text-xs text-gray-400">
+          <span class="text-xs text-[var(--ui-text-dimmed)]">
             {{ filteredData.length }} ligne{{ filteredData.length > 1 ? 's' : '' }}
             <template v-if="filteredData.length !== store.csvData.length">
               sur {{ store.csvData.length }}
@@ -205,7 +209,7 @@
               :disabled="currentPage <= 1"
               @click="currentPage--"
             />
-            <span class="text-xs text-gray-500 min-w-[60px] text-center">
+            <span class="text-xs text-[var(--ui-text-muted)] min-w-[60px] text-center">
               {{ currentPage }} / {{ totalPages }}
             </span>
             <UButton
@@ -222,11 +226,11 @@
       <!-- Preview sidebar -->
       <div v-if="store.selectedCardType" class="lg:w-auto shrink-0">
         <div class="lg:sticky lg:top-4 space-y-3">
-          <div class="text-sm font-medium text-gray-500">
+          <div class="text-sm font-medium text-[var(--ui-text-muted)]">
             Aperçu — Ligne {{ selectedRowIndex + 1 }}
           </div>
           <div
-            class="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800 flex justify-center"
+            class="border rounded-[var(--ui-radius)] p-3 bg-[var(--ui-bg-elevated)] flex justify-center"
           >
             <CardPreview
               :card-type="store.selectedCardType"
@@ -242,7 +246,7 @@
               :disabled="selectedRowIndex <= 0"
               @click="prevRow"
             />
-            <span class="text-sm text-gray-500 min-w-[60px] text-center">
+            <span class="text-sm text-[var(--ui-text-muted)] min-w-[60px] text-center">
               {{ selectedRowIndex + 1 }} / {{ store.csvData.length }}
             </span>
             <UButton
@@ -263,7 +267,7 @@
           >
             Générer les cartes
           </UButton>
-          <div v-if="generatedCountForType > 0" class="text-xs text-center text-gray-400">
+          <div v-if="generatedCountForType > 0" class="text-xs text-center text-[var(--ui-text-dimmed)]">
             {{ generatedCountForType }} carte{{ generatedCountForType > 1 ? 's' : '' }} générée{{ generatedCountForType > 1 ? 's' : '' }}
           </div>
         </div>
@@ -271,25 +275,29 @@
     </div>
 
     <!-- History panel -->
-    <div
+    <UCard
       v-if="showHistory"
-      class="border rounded-lg border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900"
+      class="mt-4"
+      variant="subtle"
     >
-      <div class="flex items-center justify-between mb-3">
-        <h4 class="text-sm font-semibold">Historique des modifications</h4>
-        <UButton
-          v-if="editHistory.length > 0"
-          size="xs"
-          variant="ghost"
-          color="error"
-          @click="editHistory = []"
-        >
-          Vider
-        </UButton>
-      </div>
+      <template #header>
+        <div class="flex items-center justify-between">
+          <h4 class="text-sm font-semibold">Historique des modifications</h4>
+          <UButton
+            v-if="editHistory.length > 0"
+            size="xs"
+            variant="ghost"
+            color="error"
+            @click="editHistory = []"
+          >
+            Vider
+          </UButton>
+        </div>
+      </template>
+
       <div
         v-if="editHistory.length === 0"
-        class="text-sm text-gray-400 text-center py-4"
+        class="text-sm text-[var(--ui-text-dimmed)] text-center py-4"
       >
         Aucune modification pour cette session.
       </div>
@@ -297,10 +305,10 @@
         <div
           v-for="(entry, i) in reversedHistory"
           :key="i"
-          class="flex items-center justify-between text-xs bg-gray-50 dark:bg-gray-800 rounded px-3 py-2 gap-3"
+          class="flex items-center justify-between text-xs bg-[var(--ui-bg-elevated)] rounded-[var(--ui-radius)] px-3 py-2 gap-3"
         >
-          <span class="text-gray-500">
-            <strong class="text-gray-700 dark:text-gray-300">Ligne {{ entry.rowIndex + 1 }}</strong>,
+          <span class="text-[var(--ui-text-muted)]">
+            <strong class="text-[var(--ui-text)]">Ligne {{ entry.rowIndex + 1 }}</strong>,
             « {{ entry.column }} » :
             <span class="line-through text-red-400">{{ entry.oldValue || '(vide)' }}</span>
             →
@@ -314,8 +322,8 @@
           />
         </div>
       </div>
-    </div>
-  </div>
+    </UCard>
+  </UCard>
 </template>
 
 <script setup>

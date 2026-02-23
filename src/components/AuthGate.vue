@@ -1,9 +1,10 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
+  <div class="min-h-screen flex items-center justify-center bg-[var(--ui-bg)] px-4">
     <div class="w-full max-w-sm">
       <div class="text-center mb-8">
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1">Générateur Gachapow</h1>
-        <p class="text-sm sm:text-base text-gray-500">Connecte-toi pour accéder à tes projets</p>
+        <UIcon name="i-lucide-sparkles" class="text-4xl text-[var(--ui-primary)] mb-3" />
+        <h1 class="text-2xl sm:text-3xl font-bold mb-1">Générateur Gachapow</h1>
+        <p class="text-sm text-[var(--ui-text-muted)]">Connecte-toi pour accéder à tes projets</p>
       </div>
 
       <UCard>
@@ -22,13 +23,9 @@
             <UInput v-model="password" type="password" placeholder="••••••••" icon="i-lucide-lock" required />
           </UFormField>
 
-          <div v-if="errorMsg" class="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">
-            {{ errorMsg }}
-          </div>
+          <UAlert v-if="errorMsg" color="error" icon="i-lucide-alert-circle" :description="errorMsg" />
 
-          <div v-if="successMsg" class="text-sm text-green-600 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 py-2">
-            {{ successMsg }}
-          </div>
+          <UAlert v-if="successMsg" color="success" icon="i-lucide-check-circle" :description="successMsg" />
 
           <UButton type="submit" color="primary" block :loading="submitting">
             {{ isSignUp ? "S'inscrire" : 'Se connecter' }}
@@ -36,11 +33,11 @@
         </form>
 
         <template #footer>
-          <p class="text-sm text-center text-gray-500">
+          <p class="text-sm text-center text-[var(--ui-text-muted)]">
             {{ isSignUp ? 'Déjà un compte ?' : 'Pas encore de compte ?' }}
             <button
               type="button"
-              class="text-primary-500 hover:underline font-medium cursor-pointer"
+              class="text-[var(--ui-primary)] hover:underline font-medium cursor-pointer"
               @click="toggleMode"
             >
               {{ isSignUp ? 'Se connecter' : "S'inscrire" }}

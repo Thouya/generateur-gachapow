@@ -1,8 +1,8 @@
 <template>
   <div class="mb-4">
-    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ label }}</label>
+    <label class="block text-sm font-medium text-[var(--ui-text-muted)] mb-1">{{ label }}</label>
     <div v-if="modelValue" class="relative inline-block max-w-[200px]">
-      <img :src="modelValue" :alt="label" class="w-full rounded-lg border border-gray-200 dark:border-gray-700" />
+      <img :src="modelValue" :alt="label" class="w-full rounded-[var(--ui-radius)] border border-[var(--ui-border)]" />
       <UButton
         class="absolute top-1 right-1"
         color="error"
@@ -14,7 +14,7 @@
     </div>
     <div
       v-else
-      class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 sm:p-6 text-center hover:border-primary-500 transition-colors cursor-pointer"
+      class="border-2 border-dashed border-[var(--ui-border)] rounded-[var(--ui-radius)] p-4 sm:p-6 text-center hover:border-[var(--ui-primary)] transition-colors cursor-pointer"
       @dragover.prevent
       @drop.prevent="onDrop"
       @click="$refs.input.click()"
@@ -26,8 +26,8 @@
         class="hidden"
         @change="onFileChange"
       />
-      <UIcon name="i-lucide-image-plus" class="text-2xl text-gray-400 mb-2" />
-      <p class="text-sm text-gray-500">Glisser ou cliquer pour choisir</p>
+      <UIcon name="i-lucide-image-plus" class="text-2xl text-[var(--ui-text-dimmed)] mb-2" />
+      <p class="text-sm text-[var(--ui-text-muted)]">Glisser ou cliquer pour choisir</p>
     </div>
   </div>
 </template>
