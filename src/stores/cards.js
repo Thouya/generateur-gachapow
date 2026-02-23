@@ -496,6 +496,10 @@ export const useCardsStore = defineStore('cards', () => {
     }
   }
 
+  function syncGeneratedCard(card) {
+    db(supabase.from('generated_cards').update({ data: card.data }).eq('id', card.id))
+  }
+
   function clearGeneratedCards(cardTypeId) {
     if (!selectedProject.value) return
     const projectId = selectedProject.value.id
@@ -553,6 +557,7 @@ export const useCardsStore = defineStore('cards', () => {
     setCsvData,
     clearCsvData,
     generateCards,
+    syncGeneratedCard,
     clearGeneratedCards,
     resetAll,
     cardTypeHistory,

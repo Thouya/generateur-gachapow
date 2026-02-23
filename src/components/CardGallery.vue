@@ -102,16 +102,38 @@
             @click="toggleCard(card.id)"
           />
 
-          <!-- Bouton export individuel -->
-          <button
+          <!-- Boutons action (non-sélection) -->
+          <div
             v-if="!selecting"
-            class="absolute top-2 right-2 z-10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-[var(--ui-bg)]/80 rounded-full p-2 shadow-sm hover:shadow cursor-pointer"
-            title="Exporter cette carte en PDF"
-            :disabled="exporting"
-            @click="exportSingleCard(index)"
+            class="absolute top-2 right-2 z-10 flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
           >
-            <UIcon name="i-lucide-download" />
-          </button>
+            <!-- Changer illustration -->
+            <button
+              class="bg-[var(--ui-bg)]/80 rounded-full p-2 shadow-sm hover:shadow cursor-pointer"
+              title="Changer l'illustration"
+              @click="openIllustrationPicker(card, index)"
+            >
+              <UIcon name="i-lucide-image" />
+            </button>
+            <!-- Export individuel -->
+            <button
+              class="bg-[var(--ui-bg)]/80 rounded-full p-2 shadow-sm hover:shadow cursor-pointer"
+              title="Exporter cette carte en PDF"
+              :disabled="exporting"
+              @click="exportSingleCard(index)"
+            >
+              <UIcon name="i-lucide-download" />
+            </button>
+          </div>
+
+          <!-- Input file caché pour illustration -->
+          <input
+            :ref="el => { if (el) illustrationInputs[index] = el }"
+            type="file"
+            accept="image/*"
+            class="hidden"
+            @change="onIllustrationChange($event, card)"
+          />
         </div>
       </div>
     </template>
@@ -133,6 +155,7 @@ const exportProgress = ref(0)
 const exportProgressText = ref('')
 const selecting = ref(false)
 const selectedIds = reactive(new Set())
+const illustrationInputs = ref({})
 
 const cards = computed(() => store.generatedCards)
 
@@ -174,6 +197,26 @@ function getExportElements(filterFn) {
     }
   })
   return result
+}
+
+// --- Illustration par carte ---
+
+function openIllustrationPicker(card, index) {
+  const input = illustrationInputs.value[index]
+  if (input) input.click()
+}
+
+function onIllustrationChange(event, card) {
+  const file = event.target.files[0]
+  if (!file || !file.type.startsWith('image/')) return
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    card.data.__illustration = e.target.result
+    store.syncGeneratedCard(card)
+  }
+  reader.readAsDataURL(file)
+  // Reset pour permettre de re-sélectionner le même fichier
+  event.target.value = ''
 }
 
 // --- Sélection ---

@@ -58,9 +58,13 @@ const cardStyle = computed(() => ({
 }))
 
 const illustrationSrc = computed(() => {
+  // Priorité 1 : illustration personnalisée par carte
+  if (props.cardData.__illustration) return props.cardData.__illustration
+  // Priorité 2 : colonne CSV désignée
   if (props.cardType.illustrationColumn && props.cardData[props.cardType.illustrationColumn]) {
     return props.cardData[props.cardType.illustrationColumn]
   }
+  // Priorité 3 : illustration par défaut du type
   return props.cardType.illustrationImage || null
 })
 
