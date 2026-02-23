@@ -1,7 +1,7 @@
 <template>
   <div class="rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg)] shadow-sm">
     <div class="px-4 py-3 border-b border-[var(--ui-border)]">
-      <h3 class="text-lg font-semibold">{{ isEditing ? 'Modifier le type' : 'Nouveau type de carte' }}</h3>
+      <h3 class="text-lg font-semibold">{{ title }}</h3>
     </div>
 
     <div class="p-4 space-y-4">
@@ -56,9 +56,9 @@
 
     <div class="px-4 py-3 border-t border-[var(--ui-border)] flex gap-3">
       <UButton color="primary" icon="i-lucide-save" :disabled="!form.name" @click="save">
-        {{ isEditing ? 'Mettre à jour' : 'Créer le type' }}
+        {{ isEditing ? 'Enregistrer' : 'Créer le type' }}
       </UButton>
-      <UButton v-if="isEditing" variant="soft" @click="$emit('cancel')">Annuler</UButton>
+      <UButton v-if="isEditing && !tabMode" variant="soft" @click="$emit('cancel')">Annuler</UButton>
     </div>
   </div>
 </template>
@@ -71,6 +71,8 @@ import { useCardsStore } from '../stores/cards.js'
 
 const props = defineProps({
   editingType: { type: Object, default: null },
+  // tabMode = true : on édite store.selectedCardType directement, sans prop editingType
+  tabMode: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['saved', 'cancel'])
@@ -114,8 +116,17 @@ const previewData = computed(() => {
   return {}
 })
 
+// Source of truth for the type being edited
+const sourceType = computed(() => props.editingType ?? (props.tabMode ? store.selectedCardType : null))
+
+const title = computed(() => {
+  if (props.tabMode && store.selectedCardType) return `Options — ${store.selectedCardType.name}`
+  if (isEditing.value) return 'Modifier le type'
+  return 'Nouveau type de carte'
+})
+
 watch(
-  () => props.editingType,
+  sourceType,
   (type) => {
     if (type) {
       isEditing.value = true
@@ -140,15 +151,18 @@ function save() {
     contentFields: form.contentFields.map((f) => ({ ...f })),
   }
 
-  if (isEditing.value && props.editingType) {
-    store.updateCardType(props.editingType.id, data)
+  const editingId = sourceType.value?.id
+  if (isEditing.value && editingId) {
+    store.updateCardType(editingId, data)
   } else {
     const id = store.addCardType(data)
     store.selectCardType(id)
   }
 
-  resetForm()
-  isEditing.value = false
+  if (!props.tabMode) {
+    resetForm()
+    isEditing.value = false
+  }
   emit('saved')
 }
 </script>

@@ -1,6 +1,6 @@
 <template>
-  <UCard>
-    <template #header>
+  <div class="rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg)] shadow-sm">
+    <div class="px-4 py-3 border-b border-[var(--ui-border)]">
       <div class="flex items-center justify-between gap-3 flex-wrap">
         <div class="flex items-center gap-2">
           <UIcon name="i-lucide-table-2" class="text-lg text-[var(--ui-primary)]" />
@@ -12,18 +12,19 @@
             placeholder="Rechercher…"
             icon="i-lucide-search"
             size="sm"
-            class="w-48"
+            class="w-full sm:w-40"
           />
           <UButton
             size="sm"
             variant="soft"
             icon="i-lucide-history"
+            :title="`Historique (${editHistory.length})`"
             @click="showHistory = !showHistory"
           >
-            {{ editHistory.length }}
+            <span class="hidden sm:inline">{{ editHistory.length }}</span>
           </UButton>
           <UButton size="sm" variant="soft" icon="i-lucide-plus" @click="addRow">
-            Ligne
+            <span class="hidden sm:inline">Ligne</span>
           </UButton>
           <UButton
             v-if="!showAddColumn"
@@ -32,14 +33,14 @@
             icon="i-lucide-columns-3"
             @click="showAddColumn = true"
           >
-            Colonne
+            <span class="hidden sm:inline">Colonne</span>
           </UButton>
           <div v-else class="flex items-center gap-1">
             <UInput
               v-model="newColumnName"
               placeholder="Nom…"
               size="sm"
-              class="w-28"
+              class="w-24"
               @keyup.enter="addColumn"
             />
             <UButton size="sm" color="primary" icon="i-lucide-check" @click="addColumn" />
@@ -52,8 +53,9 @@
           </div>
         </div>
       </div>
-    </template>
+    </div>
 
+    <div class="p-4">
     <!-- Content: table + preview -->
     <div class="flex flex-col lg:flex-row gap-4">
       <!-- Table -->
@@ -275,55 +277,55 @@
     </div>
 
     <!-- History panel -->
-    <UCard
+    <div
       v-if="showHistory"
-      class="mt-4"
-      variant="subtle"
+      class="mt-4 rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)]"
     >
-      <template #header>
-        <div class="flex items-center justify-between">
-          <h4 class="text-sm font-semibold">Historique des modifications</h4>
-          <UButton
-            v-if="editHistory.length > 0"
-            size="xs"
-            variant="ghost"
-            color="error"
-            @click="editHistory = []"
-          >
-            Vider
-          </UButton>
-        </div>
-      </template>
-
-      <div
-        v-if="editHistory.length === 0"
-        class="text-sm text-[var(--ui-text-dimmed)] text-center py-4"
-      >
-        Aucune modification pour cette session.
-      </div>
-      <div v-else class="space-y-1 max-h-48 overflow-y-auto">
-        <div
-          v-for="(entry, i) in reversedHistory"
-          :key="i"
-          class="flex items-center justify-between text-xs bg-[var(--ui-bg-elevated)] rounded-[var(--ui-radius)] px-3 py-2 gap-3"
+      <div class="px-3 py-2 border-b border-[var(--ui-border)] flex items-center justify-between">
+        <h4 class="text-sm font-semibold">Historique des modifications</h4>
+        <UButton
+          v-if="editHistory.length > 0"
+          size="xs"
+          variant="ghost"
+          color="error"
+          @click="editHistory = []"
         >
-          <span class="text-[var(--ui-text-muted)]">
-            <strong class="text-[var(--ui-text)]">Ligne {{ entry.rowIndex + 1 }}</strong>,
-            « {{ entry.column }} » :
-            <span class="line-through text-red-400">{{ entry.oldValue || '(vide)' }}</span>
-            →
-            <span class="text-green-500">{{ entry.newValue || '(vide)' }}</span>
-          </span>
-          <UButton
-            size="xs"
-            variant="ghost"
-            icon="i-lucide-undo-2"
-            @click="undoEdit(editHistory.length - 1 - i)"
-          />
+          Vider
+        </UButton>
+      </div>
+
+      <div class="p-3">
+        <div
+          v-if="editHistory.length === 0"
+          class="text-sm text-[var(--ui-text-dimmed)] text-center py-4"
+        >
+          Aucune modification pour cette session.
+        </div>
+        <div v-else class="space-y-1 max-h-48 overflow-y-auto">
+          <div
+            v-for="(entry, i) in reversedHistory"
+            :key="i"
+            class="flex items-center justify-between text-xs bg-[var(--ui-bg)] rounded-[var(--ui-radius)] px-3 py-2 gap-3"
+          >
+            <span class="text-[var(--ui-text-muted)]">
+              <strong class="text-[var(--ui-text)]">Ligne {{ entry.rowIndex + 1 }}</strong>,
+              « {{ entry.column }} » :
+              <span class="line-through text-red-400">{{ entry.oldValue || '(vide)' }}</span>
+              →
+              <span class="text-green-500">{{ entry.newValue || '(vide)' }}</span>
+            </span>
+            <UButton
+              size="xs"
+              variant="ghost"
+              icon="i-lucide-undo-2"
+              @click="undoEdit(editHistory.length - 1 - i)"
+            />
+          </div>
         </div>
       </div>
-    </UCard>
-  </UCard>
+    </div>
+    </div>
+  </div>
 </template>
 
 <script setup>

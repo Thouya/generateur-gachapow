@@ -12,6 +12,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AuthGate: typeof import('./src/components/AuthGate.vue')['default']
+    CardEditPanel: typeof import('./src/components/CardEditPanel.vue')['default']
     CardGallery: typeof import('./src/components/CardGallery.vue')['default']
     CardPreview: typeof import('./src/components/CardPreview.vue')['default']
     CardTypeEditor: typeof import('./src/components/CardTypeEditor.vue')['default']
@@ -21,6 +22,7 @@ declare module 'vue' {
     FieldMapper: typeof import('./src/components/FieldMapper.vue')['default']
     ImageUploader: typeof import('./src/components/ImageUploader.vue')['default']
     ProjectManager: typeof import('./src/components/ProjectManager.vue')['default']
+    ProjectRules: typeof import('./src/components/ProjectRules.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     UAlert: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Alert.vue')['default']
@@ -38,9 +40,7 @@ declare module 'vue' {
     UIcon: typeof import('./node_modules/@nuxt/ui/dist/runtime/vue/components/Icon.vue')['default']
     UInput: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Input.vue')['default']
     UModal: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Modal.vue')['default']
-    UNavigationMenu: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/NavigationMenu.vue')['default']
     UProgress: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Progress.vue')['default']
     USelect: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Select.vue')['default']
-    USeparator: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Separator.vue')['default']
   }
 }

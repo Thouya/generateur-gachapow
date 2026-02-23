@@ -44,80 +44,58 @@
                 />
               </button>
 
-              <!-- Sous-menu si ce projet est sélectionné -->
+              <!-- Types de cartes du projet sélectionné -->
               <div v-if="store.selectedProjectId === project.id" class="ml-4 mt-0.5 flex flex-col gap-0.5">
-                <!-- Types de cartes (en-tête section) -->
                 <button
-                  class="flex items-center gap-2 px-3 py-1.5 rounded-[var(--ui-radius)] text-left text-sm transition-colors w-full"
-                  :class="currentView === 'cardtypes'
-                    ? 'bg-[var(--ui-bg-elevated)] text-[var(--ui-text)] font-medium'
+                  v-for="ct in store.cardTypes"
+                  :key="ct.id"
+                  class="flex items-center justify-between gap-2 px-3 py-1.5 rounded-[var(--ui-radius)] text-left text-sm transition-colors group/ct w-full"
+                  :class="store.selectedCardTypeId === ct.id && currentView === 'cardtype'
+                    ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-medium'
                     : 'text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-text)]'"
-                  @click="currentView = 'cardtypes'; editingCardType = null"
+                  @click="goToCardType(ct.id)"
                 >
-                  <UIcon name="i-lucide-layout-template" class="shrink-0 text-xs" />
-                  <span>Types de cartes</span>
-                </button>
-
-                <!-- Liste des types de cartes -->
-                <div class="ml-4 flex flex-col gap-0.5">
-                  <button
-                    v-for="ct in store.cardTypes"
-                    :key="ct.id"
-                    class="flex items-center justify-between gap-2 px-3 py-1.5 rounded-[var(--ui-radius)] text-left text-sm transition-colors group/ct w-full"
-                    :class="store.selectedCardTypeId === ct.id && currentView === 'cardtypes'
-                      ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-medium'
-                      : 'text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-text)]'"
-                    @click="selectCardType(ct.id)"
-                  >
+                  <div class="flex items-center gap-2 min-w-0">
+                    <UIcon name="i-lucide-layout-template" class="shrink-0 text-xs" />
                     <span class="truncate">{{ ct.name }}</span>
-                    <div class="flex gap-0.5 opacity-0 group-hover/ct:opacity-100 shrink-0">
-                      <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-pencil" @click.stop="editType(ct)" />
-                      <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-history" @click.stop="openHistory(ct)" />
-                      <UButton size="xs" variant="ghost" color="error" icon="i-lucide-trash-2" @click.stop="store.deleteCardType(ct.id)" />
-                    </div>
-                  </button>
-
-                  <!-- Ajouter un type de carte -->
-                  <button
-                    class="flex items-center gap-2 px-3 py-1.5 rounded-[var(--ui-radius)] text-left text-sm text-[var(--ui-text-dimmed)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-primary)] transition-colors w-full"
-                    @click="addCardType"
-                  >
-                    <UIcon name="i-lucide-plus" class="shrink-0 text-xs" />
-                    <span>Ajouter un type</span>
-                  </button>
-                </div>
-
-                <!-- Données -->
-                <button
-                  class="flex items-center gap-2 px-3 py-1.5 rounded-[var(--ui-radius)] text-left text-sm transition-colors w-full"
-                  :class="[
-                    !store.selectedCardTypeId ? 'opacity-40 cursor-not-allowed text-[var(--ui-text-muted)]' : '',
-                    currentView === 'data' && store.selectedCardTypeId
-                      ? 'bg-[var(--ui-bg-elevated)] text-[var(--ui-text)] font-medium'
-                      : 'text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-text)]'
-                  ]"
-                  :disabled="!store.selectedCardTypeId"
-                  @click="goToData"
-                >
-                  <UIcon name="i-lucide-table" class="shrink-0 text-xs" />
-                  <span>Données</span>
-                  <UBadge v-if="store.csvData.length > 0" :label="String(store.csvData.length)" color="primary" variant="subtle" size="xs" class="ml-auto" />
+                  </div>
+                  <div class="flex gap-0.5 opacity-0 group-hover/ct:opacity-100 shrink-0">
+                    <UButton
+                      size="xs"
+                      variant="ghost"
+                      color="neutral"
+                      icon="i-lucide-history"
+                      @click.stop="openHistory(ct)"
+                    />
+                    <UButton
+                      size="xs"
+                      variant="ghost"
+                      color="error"
+                      icon="i-lucide-trash-2"
+                      @click.stop="store.deleteCardType(ct.id)"
+                    />
+                  </div>
                 </button>
 
-                <!-- Galerie -->
+                <!-- Règles du projet -->
                 <button
                   class="flex items-center gap-2 px-3 py-1.5 rounded-[var(--ui-radius)] text-left text-sm transition-colors w-full"
-                  :class="[
-                    !store.csvData.length ? 'opacity-40 cursor-not-allowed text-[var(--ui-text-muted)]' : '',
-                    currentView === 'gallery' && store.csvData.length
-                      ? 'bg-[var(--ui-bg-elevated)] text-[var(--ui-text)] font-medium'
-                      : 'text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-text)]'
-                  ]"
-                  :disabled="!store.csvData.length"
-                  @click="goToGallery"
+                  :class="currentView === 'rules'
+                    ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-medium'
+                    : 'text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-text)]'"
+                  @click="goToRules"
                 >
-                  <UIcon name="i-lucide-images" class="shrink-0 text-xs" />
-                  <span>Galerie</span>
+                  <UIcon name="i-lucide-book-open" class="shrink-0 text-xs" />
+                  <span>Règles</span>
+                </button>
+
+                <!-- Ajouter un type de carte -->
+                <button
+                  class="flex items-center gap-2 px-3 py-1.5 rounded-[var(--ui-radius)] text-left text-sm text-[var(--ui-text-dimmed)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-primary)] transition-colors w-full"
+                  @click="createNewCardType"
+                >
+                  <UIcon name="i-lucide-plus" class="shrink-0 text-xs" />
+                  <span>Ajouter un type</span>
                 </button>
               </div>
             </div>
@@ -182,37 +160,82 @@
               </div>
             </div>
 
-            <!-- Vue : Types de cartes -->
-            <div v-else-if="currentView === 'cardtypes'" class="space-y-6">
-              <CardTypeEditor
-                :editing-type="editingCardType"
-                @saved="onCardTypeSaved"
-                @cancel="editingCardType = null"
-              />
+            <!-- Vue : Nouveau type de carte -->
+            <div v-else-if="currentView === 'newtype'" class="space-y-6">
+              <CardTypeEditor @saved="onCardTypeSaved" @cancel="cancelNewCardType" />
             </div>
 
-            <!-- Vue : Données CSV -->
-            <div v-else-if="currentView === 'data'" class="space-y-6">
-              <CsvUploader />
-              <DataWorkbench v-if="store.csvData.length > 0" />
+            <!-- Vue : Type de carte avec onglets -->
+            <div v-else-if="currentView === 'cardtype' && store.selectedCardType">
+              <!-- Barre d'onglets -->
+              <div class="border-b border-[var(--ui-border)] mb-6 -mx-4 px-4">
+                <div class="flex flex-wrap gap-0">
+                  <button
+                    v-for="tab in tabs"
+                    :key="tab.key"
+                    class="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 text-sm font-medium border-b-2 transition-colors"
+                    :class="currentTab === tab.key
+                      ? 'border-[var(--ui-primary)] text-[var(--ui-primary)]'
+                      : 'border-transparent text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] hover:border-[var(--ui-border-accented)]'"
+                    @click="currentTab = tab.key"
+                  >
+                    <UIcon :name="tab.icon" class="text-sm" />
+                    <span>{{ tab.label }}</span>
+                    <UBadge
+                      v-if="tab.badge"
+                      :label="String(tab.badge)"
+                      color="primary"
+                      variant="subtle"
+                      size="xs"
+                    />
+                  </button>
+                </div>
+              </div>
+
+              <!-- Contenu de l'onglet -->
+              <div class="space-y-6">
+                <!-- Onglet Options -->
+                <CardTypeEditor v-if="currentTab === 'options'" :tab-mode="true" @saved="() => {}" />
+
+                <!-- Onglet Données -->
+                <template v-else-if="currentTab === 'data'">
+                  <CsvUploader />
+                  <DataWorkbench v-if="store.csvData.length > 0" />
+                </template>
+
+                <!-- Onglet Galerie -->
+                <CardGallery v-else-if="currentTab === 'gallery'" />
+              </div>
             </div>
 
-            <!-- Vue : Galerie -->
-            <CardGallery v-else-if="currentView === 'gallery'" />
+            <!-- Vue : Règles du projet -->
+            <div v-else-if="currentView === 'rules'">
+              <ProjectRules />
+            </div>
 
             <!-- Vue : Paramètres -->
             <div v-else-if="currentView === 'settings'">
-              <UCard variant="outline">
-                <template #header>
+              <div class="rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg)] shadow-sm max-w-lg">
+                <div class="px-4 py-3 border-b border-[var(--ui-border)]">
                   <p class="font-semibold text-sm">Zone de danger</p>
-                </template>
-                <p class="text-sm text-[var(--ui-text-dimmed)] mb-4">
-                  Réinitialiser supprimera tous les projets, types de cartes, données CSV et cartes générées.
-                </p>
-                <UButton color="error" variant="soft" icon="i-lucide-rotate-ccw" @click="confirmReset">
-                  Tout réinitialiser
-                </UButton>
-              </UCard>
+                </div>
+                <div class="p-4">
+                  <p class="text-sm text-[var(--ui-text-dimmed)] mb-4">
+                    Réinitialiser supprimera tous les projets, types de cartes, données CSV et cartes générées.
+                  </p>
+                  <UButton color="error" variant="soft" icon="i-lucide-rotate-ccw" @click="confirmReset">
+                    Tout réinitialiser
+                  </UButton>
+                </div>
+              </div>
+            </div>
+
+            <!-- État vide : aucun type sélectionné -->
+            <div v-else class="flex flex-col items-center justify-center py-20 text-[var(--ui-text-dimmed)]">
+              <UIcon name="i-lucide-layout-template" class="text-5xl mb-4" />
+              <p class="text-base mb-1">Aucun type de carte sélectionné</p>
+              <p class="text-sm mb-6">Sélectionne un type dans le menu ou crée-en un nouveau.</p>
+              <UButton icon="i-lucide-plus" @click="createNewCardType">Créer un type de carte</UButton>
             </div>
           </template>
         </template>
@@ -239,13 +262,15 @@ import CsvUploader from './components/CsvUploader.vue'
 import DataWorkbench from './components/DataWorkbench.vue'
 import CardGallery from './components/CardGallery.vue'
 import CardTypeHistory from './components/CardTypeHistory.vue'
+import ProjectRules from './components/ProjectRules.vue'
 
 const { user: authUser, loading: authLoading, init: initAuth, signOut } = useAuth()
 const store = useCardsStore()
-const editingCardType = ref(null)
+
 const historyOpen = ref(false)
 const historyCardType = ref(null)
 const currentView = ref('newproject')
+const currentTab = ref('options')
 const newProjectName = ref('')
 
 onMounted(() => {
@@ -256,33 +281,62 @@ watch(authUser, (user) => {
   if (user) store.init()
 })
 
-// Quand les projets sont chargés depuis la DB, naviguer vers le contenu
+// Quand les projets sont chargés depuis la DB, naviguer vers le bon état
 watch(() => store.projects.length, (len) => {
   if (len > 0 && currentView.value === 'newproject') {
-    currentView.value = 'cardtypes'
+    if (store.selectedCardType) {
+      currentView.value = 'cardtype'
+    }
   }
 })
 
-const viewTitle = computed(() => ({
-  newproject: 'Projets',
-  cardtypes: store.selectedProject
-    ? `${store.selectedProject.name} — Types de cartes`
-    : 'Types de cartes',
-  data: 'Données',
-  gallery: 'Galerie & Export',
-  settings: 'Paramètres',
-}[currentView.value] ?? ''))
+const cardsForType = computed(() =>
+  store.generatedCards.filter((c) => c.cardTypeId === store.selectedCardTypeId)
+)
+
+const tabs = computed(() => [
+  { key: 'options', label: 'Options', icon: 'i-lucide-settings-2' },
+  {
+    key: 'data',
+    label: 'Données',
+    icon: 'i-lucide-table',
+    badge: store.csvData.length > 0 ? store.csvData.length : null,
+  },
+  {
+    key: 'gallery',
+    label: 'Galerie',
+    icon: 'i-lucide-images',
+    badge: cardsForType.value.length > 0 ? cardsForType.value.length : null,
+  },
+])
+
+const viewTitle = computed(() => {
+  if (currentView.value === 'newproject') return 'Projets'
+  if (currentView.value === 'newtype') return 'Nouveau type de carte'
+  if (currentView.value === 'settings') return 'Paramètres'
+  if (currentView.value === 'rules') return `Règles — ${store.selectedProject?.name ?? ''}`
+  if (currentView.value === 'cardtype') {
+    const tabLabel = tabs.value.find((t) => t.key === currentTab.value)?.label ?? ''
+    return store.selectedCardType
+      ? `${store.selectedCardType.name} — ${tabLabel}`
+      : 'Type de carte'
+  }
+  return ''
+})
 
 function selectProject(id) {
   store.selectProject(id)
-  currentView.value = 'cardtypes'
-  editingCardType.value = null
+  // Si un type est déjà sélectionné dans ce projet, aller dessus
+  if (store.selectedCardType) {
+    currentView.value = 'cardtype'
+    currentTab.value = 'options'
+  }
 }
 
 function deleteProject(id) {
   if (!window.confirm('Supprimer ce projet et toutes ses données ?')) return
   store.deleteProject(id)
-  currentView.value = store.projects.length > 0 ? 'cardtypes' : 'newproject'
+  currentView.value = store.projects.length > 0 ? (store.selectedCardType ? 'cardtype' : 'newproject') : 'newproject'
 }
 
 function createProject() {
@@ -290,35 +344,32 @@ function createProject() {
   if (!name) return
   store.addProject(name)
   newProjectName.value = ''
-  currentView.value = 'cardtypes'
+  // Nouveau projet vide → inviter à créer un type
+  currentView.value = 'newtype'
 }
 
-function selectCardType(id) {
+function goToCardType(id) {
   store.selectCardType(id)
-  currentView.value = 'cardtypes'
-  editingCardType.value = null
+  currentView.value = 'cardtype'
+  currentTab.value = 'options'
 }
 
-function goToData() {
-  if (store.selectedCardTypeId) currentView.value = 'data'
+function createNewCardType() {
+  currentView.value = 'newtype'
 }
 
-function goToGallery() {
-  if (store.csvData.length) currentView.value = 'gallery'
-}
-
-function addCardType() {
-  editingCardType.value = null
-  currentView.value = 'cardtypes'
-}
-
-function editType(cardType) {
-  editingCardType.value = { ...cardType, contentFields: cardType.contentFields?.map((f) => ({ ...f })) }
-  currentView.value = 'cardtypes'
+function goToRules() {
+  currentView.value = 'rules'
 }
 
 function onCardTypeSaved() {
-  editingCardType.value = null
+  // Après création/sauvegarde → aller sur l'onglet Options du type
+  currentView.value = 'cardtype'
+  currentTab.value = 'options'
+}
+
+function cancelNewCardType() {
+  currentView.value = store.selectedCardType ? 'cardtype' : 'newproject'
 }
 
 function openHistory(ct) {
@@ -334,7 +385,6 @@ function handleLogout() {
 function confirmReset() {
   if (window.confirm('Supprimer tous les projets, types de cartes, données CSV et cartes générées ?')) {
     store.resetAll()
-    editingCardType.value = null
     currentView.value = 'newproject'
   }
 }

@@ -1,150 +1,217 @@
 <template>
   <div class="rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg)] shadow-sm">
+    <!-- Header -->
     <div class="px-4 py-3 border-b border-[var(--ui-border)] flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-2">
-        <UIcon name="i-lucide-layers" class="text-lg text-[var(--ui-primary)]" />
-        <h3 class="text-lg font-semibold">Cartes générées</h3>
+        <UIcon name="i-lucide-images" class="text-lg text-[var(--ui-primary)]" />
+        <h3 class="text-lg font-semibold">Galerie</h3>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <UBadge v-if="cards.length > 0" color="primary" variant="subtle">
           {{ totalWithQuantities }} carte{{ totalWithQuantities > 1 ? 's' : '' }}
         </UBadge>
 
-        <!-- Bouton mode sélection -->
+        <!-- Regénérer -->
+        <UButton
+          v-if="store.csvData.length > 0"
+          icon="i-lucide-sparkles"
+          color="primary"
+          variant="soft"
+          size="sm"
+          :title="cards.length > 0 ? 'Regénérer' : 'Générer'"
+          @click="store.generateCards()"
+        >
+          <span class="hidden sm:inline">{{ cards.length > 0 ? 'Regénérer' : 'Générer' }}</span>
+        </UButton>
+
+        <!-- Mode sélection -->
         <UButton
           v-if="cards.length > 0"
           :icon="selecting ? 'i-lucide-x' : 'i-lucide-check-square'"
-          :label="selecting ? 'Annuler' : 'Sélectionner'"
           color="neutral"
           variant="soft"
           size="sm"
           :disabled="exporting"
+          :title="selecting ? 'Annuler' : 'Sélectionner'"
           @click="toggleSelecting"
-        />
+        >
+          <span class="hidden sm:inline">{{ selecting ? 'Annuler' : 'Sélectionner' }}</span>
+        </UButton>
 
         <!-- Export PDF -->
         <UButton
           v-if="cards.length > 0"
           icon="i-lucide-file-down"
-          :label="exportLabel"
           color="primary"
           variant="soft"
           size="sm"
           :loading="exporting"
           :disabled="selecting && selectedIds.size === 0"
+          :title="exportLabel"
           @click="exportPdf"
-        />
-      </div>
-    </div>
-    <div class="p-4">
-
-    <div v-if="cards.length === 0" class="text-center text-[var(--ui-text-dimmed)] py-8">
-      <UIcon name="i-lucide-layers" class="text-4xl mb-3" />
-      <p>Aucune carte générée. Sélectionne un type de carte, charge un CSV, puis clique sur "Générer".</p>
-    </div>
-
-    <template v-else>
-      <!-- Barre sélection -->
-      <div v-if="selecting" class="pb-3 flex items-center gap-2">
-        <UButton
-          size="xs"
-          variant="ghost"
-          :label="selectedIds.size === cards.length ? 'Tout désélectionner' : 'Tout sélectionner'"
-          @click="toggleAll"
-        />
-        <span v-if="selectedIds.size > 0" class="text-sm text-[var(--ui-text-muted)]">
-          {{ selectedIds.size }} sélectionnée{{ selectedIds.size > 1 ? 's' : '' }}
-        </span>
-      </div>
-
-      <!-- Barre de progression export -->
-      <div v-if="exporting" class="pb-3">
-        <div class="flex items-center gap-3">
-          <UProgress :value="exportProgress" class="flex-1" />
-          <span class="text-sm text-[var(--ui-text-muted)] whitespace-nowrap">{{ exportProgressText }}</span>
-        </div>
-      </div>
-
-      <div ref="galleryRef" class="flex flex-wrap gap-3 sm:gap-6">
-        <div
-          v-for="(card, index) in cards"
-          :key="card.id"
-          class="flex-shrink-0 relative group"
-          :class="{ 'ring-3 ring-[var(--ui-primary)] rounded-xl': selecting && selectedIds.has(card.id) }"
         >
-          <CardPreview :card-type="getCardType(card.cardTypeId)" :card-data="card.data" />
+          <span class="hidden sm:inline">{{ exportLabel }}</span>
+        </UButton>
+      </div>
+    </div>
 
-          <!-- Badge quantité -->
-          <div
-            v-if="getQuantity(card) > 1 && !selecting"
-            class="absolute top-2 left-2 z-10 bg-[var(--ui-primary)] text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow"
-          >
-            &times;{{ getQuantity(card) }}
-          </div>
+    <div class="p-4">
+      <!-- État vide : pas de CSV chargé -->
+      <div v-if="store.csvData.length === 0" class="text-center text-[var(--ui-text-dimmed)] py-12">
+        <UIcon name="i-lucide-table" class="text-4xl mb-3" />
+        <p>Charge d'abord un CSV dans l'onglet <strong>Données</strong>.</p>
+      </div>
 
-          <!-- Checkbox en mode sélection -->
-          <div
-            v-if="selecting"
-            class="absolute top-2 left-2 z-10"
-          >
-            <input
-              type="checkbox"
-              :checked="selectedIds.has(card.id)"
-              class="w-6 h-6 rounded cursor-pointer accent-[var(--ui-primary)]"
-              @change="toggleCard(card.id)"
+      <!-- État vide : CSV chargé mais pas encore généré -->
+      <div v-else-if="cards.length === 0" class="text-center text-[var(--ui-text-dimmed)] py-12">
+        <UIcon name="i-lucide-layers" class="text-4xl mb-3" />
+        <p class="mb-4">Aucune carte générée pour ce type.</p>
+        <UButton icon="i-lucide-sparkles" color="primary" @click="store.generateCards()">
+          Générer les cartes
+        </UButton>
+      </div>
+
+      <template v-else>
+        <!-- Barre de recherche + filtres par colonne -->
+        <div class="mb-4 space-y-2">
+          <UInput
+            v-model="searchQuery"
+            placeholder="Rechercher dans toutes les colonnes…"
+            icon="i-lucide-search"
+            size="sm"
+          />
+          <div v-if="visibleColumns.length > 0" class="flex flex-wrap items-center gap-1.5">
+            <div v-for="col in visibleColumns" :key="col" class="flex items-center gap-1">
+              <span class="text-xs text-[var(--ui-text-muted)] whitespace-nowrap hidden sm:inline">{{ col }} :</span>
+              <input
+                v-model="columnFilters[col]"
+                type="text"
+                :placeholder="col"
+                class="text-xs px-2 py-1 rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] focus:border-[var(--ui-primary)] outline-none w-[72px] sm:w-[90px]"
+              />
+            </div>
+            <UButton
+              v-if="hasActiveFilters"
+              size="xs"
+              variant="ghost"
+              color="neutral"
+              icon="i-lucide-x"
+              label="Effacer"
+              @click="clearFilters"
             />
           </div>
-
-          <!-- Clic sur la carte pour sélectionner en mode sélection -->
-          <div
-            v-if="selecting"
-            class="absolute inset-0 z-[5] cursor-pointer"
-            @click="toggleCard(card.id)"
-          />
-
-          <!-- Boutons action (non-sélection) -->
-          <div
-            v-if="!selecting"
-            class="absolute top-2 right-2 z-10 flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-          >
-            <!-- Changer illustration -->
-            <button
-              class="bg-[var(--ui-bg)]/80 rounded-full p-2 shadow-sm hover:shadow cursor-pointer"
-              title="Changer l'illustration"
-              @click="openIllustrationPicker(card, index)"
-            >
-              <UIcon name="i-lucide-image" />
-            </button>
-            <!-- Export individuel -->
-            <button
-              class="bg-[var(--ui-bg)]/80 rounded-full p-2 shadow-sm hover:shadow cursor-pointer"
-              title="Exporter cette carte en PDF"
-              :disabled="exporting"
-              @click="exportSingleCard(index)"
-            >
-              <UIcon name="i-lucide-download" />
-            </button>
+          <div v-if="filteredCards.length !== cards.length" class="text-xs text-[var(--ui-text-dimmed)]">
+            {{ filteredCards.length }} / {{ cards.length }} cartes affichées
           </div>
-
-          <!-- Input file caché pour illustration -->
-          <input
-            :ref="el => { if (el) illustrationInputs[index] = el }"
-            type="file"
-            accept="image/*"
-            class="hidden"
-            @change="onIllustrationChange($event, card)"
-          />
         </div>
-      </div>
-    </template>
+
+        <!-- Barre sélection -->
+        <div v-if="selecting" class="pb-3 flex items-center gap-2">
+          <UButton
+            size="xs"
+            variant="ghost"
+            :label="selectedIds.size === filteredCards.length ? 'Tout désélectionner' : 'Tout sélectionner'"
+            @click="toggleAll"
+          />
+          <span v-if="selectedIds.size > 0" class="text-sm text-[var(--ui-text-muted)]">
+            {{ selectedIds.size }} sélectionnée{{ selectedIds.size > 1 ? 's' : '' }}
+          </span>
+        </div>
+
+        <!-- Barre de progression export -->
+        <div v-if="exporting" class="pb-3">
+          <div class="flex items-center gap-3">
+            <UProgress :value="exportProgress" class="flex-1" />
+            <span class="text-sm text-[var(--ui-text-muted)] whitespace-nowrap">{{ exportProgressText }}</span>
+          </div>
+        </div>
+
+        <!-- Grille de cartes -->
+        <div ref="galleryRef" class="flex flex-wrap gap-3 sm:gap-6">
+          <div
+            v-for="card in filteredCards"
+            :key="card.id"
+            class="flex-shrink-0 relative group"
+            :class="{
+              'ring-3 ring-[var(--ui-primary)] rounded-xl': selecting && selectedIds.has(card.id),
+              'cursor-pointer': !selecting,
+            }"
+            @click="!selecting && openEditPanel(card)"
+          >
+            <CardPreview :card-type="cardType" :card-data="card.data" />
+
+            <!-- Badge quantité -->
+            <div
+              v-if="getQuantity(card) > 1 && !selecting"
+              class="absolute top-2 left-2 z-10 bg-[var(--ui-primary)] text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow"
+            >
+              &times;{{ getQuantity(card) }}
+            </div>
+
+            <!-- Indicateur note -->
+            <div
+              v-if="card.data?.__notes?.trim() && !selecting"
+              class="absolute bottom-2 right-2 z-10 bg-[var(--ui-bg)]/85 rounded-full p-1.5 shadow-sm"
+              title="Cette carte a des notes"
+            >
+              <UIcon name="i-lucide-notebook-pen" class="text-xs text-[var(--ui-primary)]" />
+            </div>
+
+            <!-- Checkbox mode sélection -->
+            <div v-if="selecting" class="absolute top-2 left-2 z-10">
+              <input
+                type="checkbox"
+                :checked="selectedIds.has(card.id)"
+                class="w-6 h-6 rounded cursor-pointer accent-[var(--ui-primary)]"
+                @change="toggleCard(card.id)"
+              />
+            </div>
+            <div
+              v-if="selecting"
+              class="absolute inset-0 z-[5] cursor-pointer"
+              @click="toggleCard(card.id)"
+            />
+
+            <!-- Actions hover (mode normal) -->
+            <div
+              v-if="!selecting"
+              class="absolute top-2 right-2 z-10 flex flex-col gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+            >
+              <button
+                class="bg-[var(--ui-bg)]/80 rounded-full p-1.5 shadow-sm hover:shadow cursor-pointer"
+                title="Exporter en PDF"
+                :disabled="exporting"
+                @click.stop="exportSingleCard(card)"
+              >
+                <UIcon name="i-lucide-download" class="text-sm" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aucun résultat après filtrage -->
+        <div v-if="filteredCards.length === 0" class="text-center text-[var(--ui-text-dimmed)] py-8">
+          <UIcon name="i-lucide-search-x" class="text-3xl mb-2" />
+          <p>Aucune carte ne correspond aux filtres.</p>
+        </div>
+      </template>
     </div>
   </div>
+
+  <!-- Panneau d'édition (hors du div principal pour le z-index) -->
+  <CardEditPanel
+    :card="editingCard"
+    :card-type="cardType"
+    @close="editingCard = null"
+    @saved="editingCard = null"
+  />
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, watch } from 'vue'
 import { useCardsStore } from '../stores/cards.js'
 import CardPreview from './CardPreview.vue'
+import CardEditPanel from './CardEditPanel.vue'
 import { exportCardsToPdf } from '../utils/pdfExport.js'
 
 const store = useCardsStore()
@@ -155,9 +222,51 @@ const exportProgress = ref(0)
 const exportProgressText = ref('')
 const selecting = ref(false)
 const selectedIds = reactive(new Set())
-const illustrationInputs = ref({})
+const editingCard = ref(null)
 
-const cards = computed(() => store.generatedCards)
+// Filtres
+const searchQuery = ref('')
+const columnFilters = ref({})
+
+// Cartes filtrées par type sélectionné
+const cards = computed(() =>
+  store.generatedCards.filter((c) => c.cardTypeId === store.selectedCardTypeId)
+)
+
+const cardType = computed(() => store.selectedCardType || {})
+
+const visibleColumns = computed(() =>
+  store.csvColumns.filter((col) => !col.startsWith('__'))
+)
+
+const hasActiveFilters = computed(() =>
+  searchQuery.value.trim() !== '' ||
+  Object.values(columnFilters.value).some((v) => v && v.trim() !== '')
+)
+
+const filteredCards = computed(() => {
+  let data = cards.value
+
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase()
+    data = data.filter((card) =>
+      visibleColumns.value.some((col) =>
+        String(card.data?.[col] ?? '').toLowerCase().includes(q)
+      )
+    )
+  }
+
+  for (const [col, val] of Object.entries(columnFilters.value)) {
+    if (val && val.trim()) {
+      const f = val.toLowerCase()
+      data = data.filter((card) =>
+        String(card.data?.[col] ?? '').toLowerCase().includes(f)
+      )
+    }
+  }
+
+  return data
+})
 
 const totalWithQuantities = computed(() =>
   cards.value.reduce((sum, c) => sum + (c.data?.__quantity || 1), 0)
@@ -173,50 +282,20 @@ const exportLabel = computed(() => {
   return 'Exporter en PDF'
 })
 
-function getCardType(cardTypeId) {
-  return store.cardTypes.find((t) => t.id === cardTypeId) || {}
+// Reset sélection si on change de filtre
+watch([searchQuery, columnFilters], () => { selectedIds.clear() }, { deep: true })
+
+function clearFilters() {
+  searchQuery.value = ''
+  columnFilters.value = {}
 }
 
 function getQuantity(card) {
   return card.data?.__quantity || 1
 }
 
-function getCardElements() {
-  if (!galleryRef.value) return []
-  return Array.from(galleryRef.value.querySelectorAll('.card-preview'))
-}
-
-function getExportElements(filterFn) {
-  const allElements = getCardElements()
-  const result = []
-  cards.value.forEach((card, i) => {
-    if (filterFn && !filterFn(card)) return
-    const qty = getQuantity(card)
-    for (let q = 0; q < qty; q++) {
-      result.push(allElements[i])
-    }
-  })
-  return result
-}
-
-// --- Illustration par carte ---
-
-function openIllustrationPicker(card, index) {
-  const input = illustrationInputs.value[index]
-  if (input) input.click()
-}
-
-function onIllustrationChange(event, card) {
-  const file = event.target.files[0]
-  if (!file || !file.type.startsWith('image/')) return
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    card.data.__illustration = e.target.result
-    store.syncGeneratedCard(card)
-  }
-  reader.readAsDataURL(file)
-  // Reset pour permettre de re-sélectionner le même fichier
-  event.target.value = ''
+function openEditPanel(card) {
+  editingCard.value = card
 }
 
 // --- Sélection ---
@@ -235,16 +314,35 @@ function toggleCard(id) {
 }
 
 function toggleAll() {
-  if (selectedIds.size === cards.value.length) {
+  if (selectedIds.size === filteredCards.value.length) {
     selectedIds.clear()
   } else {
-    cards.value.forEach((c) => selectedIds.add(c.id))
+    filteredCards.value.forEach((c) => selectedIds.add(c.id))
   }
 }
 
 // --- Export PDF ---
 
+function getCardElements() {
+  if (!galleryRef.value) return []
+  return Array.from(galleryRef.value.querySelectorAll('.card-preview'))
+}
+
+function getExportElements(filterFn) {
+  const allElements = getCardElements()
+  const result = []
+  filteredCards.value.forEach((card, i) => {
+    if (filterFn && !filterFn(card)) return
+    const qty = getQuantity(card)
+    for (let q = 0; q < qty; q++) {
+      result.push(allElements[i])
+    }
+  })
+  return result
+}
+
 async function runExport(elements, fileName) {
+  if (elements.length === 0) return
   exporting.value = true
   exportProgress.value = 0
   exportProgressText.value = `0 / ${elements.length}`
@@ -267,39 +365,21 @@ async function runExport(elements, fileName) {
 function exportPdf() {
   if (selecting.value && selectedIds.size > 0) {
     const elements = getExportElements((card) => selectedIds.has(card.id))
-    if (elements.length === 0) return
     runExport(elements, `cartes-selection-${elements.length}.pdf`)
   } else {
     const elements = getExportElements()
-    if (elements.length === 0) return
     runExport(elements, 'cartes-gachapow.pdf')
   }
 }
 
-async function exportSingleCard(index) {
+async function exportSingleCard(card) {
+  const idx = filteredCards.value.findIndex((c) => c.id === card.id)
+  if (idx === -1) return
   const elements = getCardElements()
-  if (!elements[index]) return
+  if (!elements[idx]) return
 
-  const card = cards.value[index]
-  const qty = card ? getQuantity(card) : 1
-  const repeated = Array(qty).fill(elements[index])
-
-  exporting.value = true
-  exportProgress.value = 0
-  exportProgressText.value = `0 / ${repeated.length}`
-
-  try {
-    await exportCardsToPdf(repeated, {
-      fileName: `carte-${index + 1}.pdf`,
-      onProgress(current, total) {
-        exportProgress.value = Math.round((current / total) * 100)
-        exportProgressText.value = `${current} / ${total}`
-      },
-    })
-  } catch (err) {
-    console.error('Erreur export PDF:', err)
-  } finally {
-    exporting.value = false
-  }
+  const qty = getQuantity(card)
+  const repeated = Array(qty).fill(elements[idx])
+  await runExport(repeated, `carte-${idx + 1}.pdf`)
 }
 </script>

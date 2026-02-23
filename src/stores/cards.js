@@ -130,6 +130,7 @@ export const useCardsStore = defineStore('cards', () => {
         projects.value = pRows.map((p) => ({
           id: p.id,
           name: p.name,
+          rules: p.rules || '',
           selectedCardTypeId: p.selected_card_type_id,
           cardTypes: (ctRows || []).filter((ct) => ct.project_id === p.id).map(dbToCardType),
           generatedCards: (gcRows || [])
@@ -208,6 +209,7 @@ export const useCardsStore = defineStore('cards', () => {
     const project = {
       id,
       name,
+      rules: '',
       cardTypes: [],
       generatedCards: [],
       selectedCardTypeId: null,
@@ -215,8 +217,15 @@ export const useCardsStore = defineStore('cards', () => {
     projects.value.push(project)
     selectedProjectId.value = id
     localStorage.setItem('gachapow-selected-project', id)
-    db(supabase.from('projects').insert({ id, name, user_id: userId.value }))
+    db(supabase.from('projects').insert({ id, name, user_id: userId.value, rules: '' }))
     return id
+  }
+
+  function updateProjectRules(id, rules) {
+    const p = projects.value.find((proj) => proj.id === id)
+    if (!p) return
+    p.rules = rules
+    db(supabase.from('projects').update({ rules }).eq('id', id))
   }
 
   function renameProject(id, name) {
@@ -354,7 +363,7 @@ export const useCardsStore = defineStore('cards', () => {
   }
 
   function selectCardType(id) {
-    if (!selectedProject.value) return
+    if (!selectedProject.value || !id) return
     selectedProject.value.selectedCardTypeId = id
     db(
       supabase
@@ -550,6 +559,7 @@ export const useCardsStore = defineStore('cards', () => {
     renameProject,
     deleteProject,
     selectProject,
+    updateProjectRules,
     addCardType,
     updateCardType,
     deleteCardType,
