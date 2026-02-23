@@ -1,4 +1,4 @@
-import html2canvas from 'html2canvas'
+import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 
 const A4_W = 210 // mm
@@ -30,15 +30,15 @@ export async function exportCardsToPdf(cardElements, options = {}) {
   const total = cardElements.length
 
   for (let i = 0; i < total; i++) {
-    const canvas = await html2canvas(cardElements[i], {
-      scale,
-      useCORS: true,
-      backgroundColor: null,
-      logging: false,
+    const el = cardElements[i]
+    const imgData = await toPng(el, {
+      pixelRatio: scale,
+      cacheBust: true,
     })
 
-    const imgData = canvas.toDataURL('image/png')
-    const aspect = canvas.width / canvas.height
+    // Calculer les dimensions réelles de l'élément pour le ratio
+    const rect = el.getBoundingClientRect()
+    const aspect = rect.width / rect.height
 
     // Adapter la carte dans sa cellule en gardant le ratio
     let w = cellW

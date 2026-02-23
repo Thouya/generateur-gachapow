@@ -38,25 +38,24 @@
       </div>
 
       <!-- Panneau de configuration du champ sélectionné -->
-      <UCard v-if="selectedField" class="w-full lg:flex-1 lg:min-w-[220px] max-h-[480px] overflow-y-auto">
-        <template #header>
-          <div class="flex justify-between items-center">
-            <strong>{{ selectedField.label || selectedField.key || `Zone ${selectedFieldIndex + 1}` }}</strong>
-            <UButton size="xs" color="error" variant="soft" icon="i-lucide-trash-2" @click="removeField(selectedFieldIndex)" />
-          </div>
-        </template>
+      <div v-if="selectedField" class="w-full lg:flex-1 lg:min-w-[220px] max-h-[480px] overflow-y-auto rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg)]">
+        <div class="flex justify-between items-center px-3 py-2 border-b border-[var(--ui-border)]">
+          <strong class="text-sm">{{ selectedField.label || selectedField.key || `Zone ${selectedFieldIndex + 1}` }}</strong>
+          <UButton size="xs" color="error" variant="soft" icon="i-lucide-trash-2" @click="removeField(selectedFieldIndex)" />
+        </div>
 
-        <div class="space-y-3">
+        <div class="p-3 space-y-3">
           <UFormField label="Label (affiché en édition)">
             <UInput v-model="selectedField.label" placeholder="Ex: Nom, ATQ, PV..." size="sm" />
           </UFormField>
 
           <UFormField label="Colonne CSV">
             <USelect
-              v-model="selectedField.key"
+              :model-value="selectedField.key || CSV_NONE"
               :items="csvColumnOptions"
               value-key="value"
               size="sm"
+              @update:model-value="selectedField.key = $event === CSV_NONE ? '' : $event"
             />
           </UFormField>
 
@@ -122,7 +121,7 @@
             {{ previewText }}
           </div>
         </div>
-      </UCard>
+      </div>
     </div>
 
     <!-- Liste des champs + ajout -->
@@ -171,8 +170,10 @@ const AVAILABLE_FONTS = [
 
 const fontOptions = AVAILABLE_FONTS
 
+const CSV_NONE = '__none__'
+
 const csvColumnOptions = computed(() => [
-  { label: '-- Choisir --', value: '' },
+  { label: '-- Choisir --', value: CSV_NONE },
   ...props.csvColumns.map((col) => ({ label: col, value: col })),
 ])
 

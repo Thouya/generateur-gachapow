@@ -442,8 +442,8 @@ function startEdit(rowIndex, col) {
 }
 
 function handleEditInput(rowIndex, col, value) {
-  const project = store.selectedProject
-  if (project) project.csvData[rowIndex][col] = value
+  const ct = store.selectedCardType
+  if (ct) ct.csvData[rowIndex][col] = value
 }
 
 function saveEdit() {
@@ -470,8 +470,8 @@ function saveEdit() {
 function cancelEdit() {
   if (!editingCell.value) return
   const { row, col } = editingCell.value
-  const project = store.selectedProject
-  if (project) project.csvData[row][col] = editOldValue.value
+  const ct = store.selectedCardType
+  if (ct) ct.csvData[row][col] = editOldValue.value
   editingCell.value = null
   editOldValue.value = null
 }
@@ -479,9 +479,9 @@ function cancelEdit() {
 function undoEdit(historyIndex) {
   const entry = editHistory.value[historyIndex]
   if (!entry) return
-  const project = store.selectedProject
-  if (project && entry.rowIndex < project.csvData.length) {
-    project.csvData[entry.rowIndex][entry.column] = entry.oldValue
+  const ct = store.selectedCardType
+  if (ct && entry.rowIndex < ct.csvData.length) {
+    ct.csvData[entry.rowIndex][entry.column] = entry.oldValue
     store.syncCsvCell(entry.rowIndex)
   }
   editHistory.value.splice(historyIndex, 1)
@@ -513,9 +513,9 @@ function addColumn() {
 // ── Quantité ────────────────────────────────────────
 function updateQuantity(rowIndex, value) {
   const qty = Math.max(1, parseInt(value) || 1)
-  const project = store.selectedProject
-  if (!project) return
-  project.csvData[rowIndex].__quantity = qty
+  const ct = store.selectedCardType
+  if (!ct) return
+  ct.csvData[rowIndex].__quantity = qty
   store.syncCsvCell(rowIndex)
 }
 

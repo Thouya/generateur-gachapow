@@ -26,6 +26,8 @@ function dbToCardType(row) {
     illustrationColumn: row.illustration_column || '',
     overlayImage: row.overlay_image || '',
     contentFields: row.content_fields || [],
+    csvData: row.csv_data || [],
+    csvColumns: row.csv_columns || [],
   }
 }
 
@@ -41,6 +43,8 @@ function cardTypeToDb(ct, projectId) {
     illustration_column: ct.illustrationColumn || '',
     overlay_image: ct.overlayImage || '',
     content_fields: ct.contentFields || [],
+    csv_data: ct.csvData || [],
+    csv_columns: ct.csvColumns || [],
   }
 }
 
@@ -75,6 +79,8 @@ function computeChanges(oldCt, updates) {
         const newNames = (newVal || []).map((f) => f.label || f.column).join(', ')
         changes[key] = { from: oldNames || '(aucun)', to: newNames || '(aucun)' }
       }
+    } else if (key === 'csvData' || key === 'csvColumns') {
+      // pas de suivi historique pour les données CSV
     } else if (oldVal !== newVal) {
       changes[key] = { from: oldVal, to: newVal }
     }
@@ -95,13 +101,15 @@ export const useCardsStore = defineStore('cards', () => {
     projects.value.find((p) => p.id === selectedProjectId.value) || null
   )
   const cardTypes = computed(() => selectedProject.value?.cardTypes ?? [])
-  const csvData = computed(() => selectedProject.value?.csvData ?? [])
-  const csvColumns = computed(() => selectedProject.value?.csvColumns ?? [])
   const generatedCards = computed(() => selectedProject.value?.generatedCards ?? [])
   const selectedCardTypeId = computed(() => selectedProject.value?.selectedCardTypeId ?? null)
   const selectedCardType = computed(() =>
     cardTypes.value.find((t) => t.id === selectedCardTypeId.value) || null
   )
+
+  // CSV : au niveau du type de carte sélectionné
+  const csvData = computed(() => selectedCardType.value?.csvData ?? [])
+  const csvColumns = computed(() => selectedCardType.value?.csvColumns ?? [])
 
   // ── Initialisation ──────────────────────────────────
   async function init() {
@@ -122,8 +130,6 @@ export const useCardsStore = defineStore('cards', () => {
         projects.value = pRows.map((p) => ({
           id: p.id,
           name: p.name,
-          csvData: p.csv_data || [],
-          csvColumns: p.csv_columns || [],
           selectedCardTypeId: p.selected_card_type_id,
           cardTypes: (ctRows || []).filter((ct) => ct.project_id === p.id).map(dbToCardType),
           generatedCards: (gcRows || [])
@@ -154,8 +160,6 @@ export const useCardsStore = defineStore('cards', () => {
           id: uid(),
           name: 'Mon projet',
           cardTypes: saved.cardTypes || [],
-          csvData: saved.csvData || [],
-          csvColumns: saved.csvColumns || [],
           generatedCards: saved.generatedCards || [],
           selectedCardTypeId: saved.selectedCardTypeId || null,
         },
@@ -167,8 +171,6 @@ export const useCardsStore = defineStore('cards', () => {
         id: p.id,
         name: p.name,
         user_id: userId.value,
-        csv_data: p.csvData || [],
-        csv_columns: p.csvColumns || [],
         selected_card_type_id: p.selectedCardTypeId,
       })
       if (pErr) {
@@ -196,7 +198,7 @@ export const useCardsStore = defineStore('cards', () => {
       }
     }
 
-    projects.value = toMigrate
+    projects.value = toMigrate.map((p) => ({ ...p, csvData: undefined, csvColumns: undefined }))
     clearStorage()
   }
 
@@ -207,8 +209,6 @@ export const useCardsStore = defineStore('cards', () => {
       id,
       name,
       cardTypes: [],
-      csvData: [],
-      csvColumns: [],
       generatedCards: [],
       selectedCardTypeId: null,
     }
@@ -250,7 +250,6 @@ export const useCardsStore = defineStore('cards', () => {
       snapshot,
       createdAt: new Date().toISOString(),
     }
-    // Ajouter en tête si on regarde déjà l'historique de ce type
     if (cardTypeHistory.value.length > 0 && cardTypeHistory.value[0]?.cardTypeId === cardTypeId) {
       cardTypeHistory.value.unshift(entry)
     }
@@ -293,7 +292,7 @@ export const useCardsStore = defineStore('cards', () => {
   function addCardType(cardType) {
     if (!selectedProject.value) return null
     const id = uid()
-    const ct = { id, ...cardType }
+    const ct = { id, csvData: [], csvColumns: [], ...cardType }
     selectedProject.value.cardTypes.push(ct)
     db(supabase.from('card_types').insert(cardTypeToDb(ct, selectedProject.value.id)))
     recordHistory(id, selectedProject.value.id, 'created', {}, makeSnapshot(ct))
@@ -308,7 +307,6 @@ export const useCardsStore = defineStore('cards', () => {
     const oldCt = selectedProject.value.cardTypes[idx]
     const changes = computeChanges(oldCt, updates)
 
-    // Enregistrer l'historique si changements réels
     if (Object.keys(changes).length > 0) {
       recordHistory(
         id,
@@ -321,7 +319,6 @@ export const useCardsStore = defineStore('cards', () => {
 
     selectedProject.value.cardTypes[idx] = { ...oldCt, ...updates }
 
-    // Conversion camelCase → snake_case pour la DB
     const dbUp = {}
     if ('name' in updates) dbUp.name = updates.name
     if ('width' in updates) dbUp.width = updates.width
@@ -331,6 +328,8 @@ export const useCardsStore = defineStore('cards', () => {
     if ('illustrationColumn' in updates) dbUp.illustration_column = updates.illustrationColumn
     if ('overlayImage' in updates) dbUp.overlay_image = updates.overlayImage
     if ('contentFields' in updates) dbUp.content_fields = updates.contentFields
+    if ('csvData' in updates) dbUp.csv_data = updates.csvData
+    if ('csvColumns' in updates) dbUp.csv_columns = updates.csvColumns
 
     if (Object.keys(dbUp).length > 0) {
       db(supabase.from('card_types').update(dbUp).eq('id', id))
@@ -351,7 +350,6 @@ export const useCardsStore = defineStore('cards', () => {
       selectedProject.value.selectedCardTypeId =
         selectedProject.value.cardTypes[0]?.id || null
     }
-    // CASCADE en DB supprime aussi les generated_cards et l'historique associés
     db(supabase.from('card_types').delete().eq('id', id))
   }
 
@@ -366,93 +364,94 @@ export const useCardsStore = defineStore('cards', () => {
     )
   }
 
-  // ── CSV ─────────────────────────────────────────────
+  // ── CSV (au niveau card type) ────────────────────────
   function setCsvData(data, columns) {
-    if (!selectedProject.value) return
-    selectedProject.value.csvData = data
-    selectedProject.value.csvColumns = columns
+    if (!selectedCardType.value) return
+    selectedCardType.value.csvData = data
+    selectedCardType.value.csvColumns = columns
     db(
       supabase
-        .from('projects')
+        .from('card_types')
         .update({ csv_data: data, csv_columns: columns })
-        .eq('id', selectedProject.value.id)
+        .eq('id', selectedCardType.value.id)
     )
   }
 
   function clearCsvData() {
-    if (!selectedProject.value) return
-    selectedProject.value.csvData = []
-    selectedProject.value.csvColumns = []
+    if (!selectedCardType.value) return
+    selectedCardType.value.csvData = []
+    selectedCardType.value.csvColumns = []
     db(
       supabase
-        .from('projects')
+        .from('card_types')
         .update({ csv_data: [], csv_columns: [] })
-        .eq('id', selectedProject.value.id)
+        .eq('id', selectedCardType.value.id)
     )
   }
 
   // ── Édition CSV ─────────────────────────────────────
   function syncCsvCell(rowIndex) {
-    const project = selectedProject.value
-    if (!project) return
+    const ct = selectedCardType.value
+    if (!ct) return
 
     // Mettre à jour les cartes générées qui référencent cette ligne
-    project.generatedCards.forEach((gc) => {
+    selectedProject.value.generatedCards.forEach((gc) => {
+      if (gc.cardTypeId !== ct.id) return
       const idx = parseInt(gc.id.split('-').pop())
       if (idx === rowIndex) {
-        gc.data = { ...project.csvData[rowIndex] }
+        gc.data = { ...ct.csvData[rowIndex] }
         db(supabase.from('generated_cards').update({ data: gc.data }).eq('id', gc.id))
       }
     })
 
     db(
       supabase
-        .from('projects')
-        .update({ csv_data: project.csvData })
-        .eq('id', project.id)
+        .from('card_types')
+        .update({ csv_data: ct.csvData })
+        .eq('id', ct.id)
     )
   }
 
   function addCsvRow() {
-    const project = selectedProject.value
-    if (!project) return
+    const ct = selectedCardType.value
+    if (!ct) return
     const newRow = {}
-    project.csvColumns.forEach((col) => {
+    ct.csvColumns.forEach((col) => {
       newRow[col] = ''
     })
-    project.csvData.push(newRow)
+    ct.csvData.push(newRow)
     db(
       supabase
-        .from('projects')
-        .update({ csv_data: project.csvData })
-        .eq('id', project.id)
+        .from('card_types')
+        .update({ csv_data: ct.csvData })
+        .eq('id', ct.id)
     )
   }
 
   function deleteCsvRow(rowIndex) {
-    const project = selectedProject.value
-    if (!project) return
-    project.csvData.splice(rowIndex, 1)
+    const ct = selectedCardType.value
+    if (!ct) return
+    ct.csvData.splice(rowIndex, 1)
     db(
       supabase
-        .from('projects')
-        .update({ csv_data: project.csvData })
-        .eq('id', project.id)
+        .from('card_types')
+        .update({ csv_data: ct.csvData })
+        .eq('id', ct.id)
     )
   }
 
   function addCsvColumn(name) {
-    const project = selectedProject.value
-    if (!project || !name || project.csvColumns.includes(name)) return
-    project.csvColumns.push(name)
-    project.csvData.forEach((row) => {
+    const ct = selectedCardType.value
+    if (!ct || !name || ct.csvColumns.includes(name)) return
+    ct.csvColumns.push(name)
+    ct.csvData.forEach((row) => {
       row[name] = ''
     })
     db(
       supabase
-        .from('projects')
-        .update({ csv_data: project.csvData, csv_columns: project.csvColumns })
-        .eq('id', project.id)
+        .from('card_types')
+        .update({ csv_data: ct.csvData, csv_columns: ct.csvColumns })
+        .eq('id', ct.id)
     )
   }
 
@@ -468,13 +467,11 @@ export const useCardsStore = defineStore('cards', () => {
       data: { ...row },
     }))
 
-    // Mise à jour locale
     selectedProject.value.generatedCards = [
       ...selectedProject.value.generatedCards.filter((c) => c.cardTypeId !== type.id),
       ...cards,
     ]
 
-    // Sync DB : supprimer les anciennes + insérer les nouvelles
     syncGenerateCards(type.id, projectId, cards)
   }
 

@@ -23,7 +23,8 @@
         ref="input"
         type="file"
         accept="image/*"
-        class="hidden"
+        class="absolute inset-0 opacity-0 w-0 h-0 pointer-events-none"
+        tabindex="-1"
         @change="onFileChange"
       />
       <UIcon name="i-lucide-image-plus" class="text-2xl text-[var(--ui-text-dimmed)] mb-2" />

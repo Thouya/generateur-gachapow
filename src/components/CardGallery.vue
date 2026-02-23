@@ -1,43 +1,42 @@
 <template>
-  <UCard>
-    <template #header>
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <div class="flex items-center gap-2">
-          <UIcon name="i-lucide-layers" class="text-lg text-[var(--ui-primary)]" />
-          <h3 class="text-lg font-semibold">Cartes générées</h3>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <UBadge v-if="cards.length > 0" color="primary" variant="subtle">
-            {{ totalWithQuantities }} carte{{ totalWithQuantities > 1 ? 's' : '' }}
-          </UBadge>
-
-          <!-- Bouton mode sélection -->
-          <UButton
-            v-if="cards.length > 0"
-            :icon="selecting ? 'i-lucide-x' : 'i-lucide-check-square'"
-            :label="selecting ? 'Annuler' : 'Sélectionner'"
-            color="neutral"
-            variant="soft"
-            size="sm"
-            :disabled="exporting"
-            @click="toggleSelecting"
-          />
-
-          <!-- Export PDF -->
-          <UButton
-            v-if="cards.length > 0"
-            icon="i-lucide-file-down"
-            :label="exportLabel"
-            color="primary"
-            variant="soft"
-            size="sm"
-            :loading="exporting"
-            :disabled="selecting && selectedIds.size === 0"
-            @click="exportPdf"
-          />
-        </div>
+  <div class="rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg)] shadow-sm">
+    <div class="px-4 py-3 border-b border-[var(--ui-border)] flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <UIcon name="i-lucide-layers" class="text-lg text-[var(--ui-primary)]" />
+        <h3 class="text-lg font-semibold">Cartes générées</h3>
       </div>
-    </template>
+      <div class="flex flex-wrap items-center gap-2">
+        <UBadge v-if="cards.length > 0" color="primary" variant="subtle">
+          {{ totalWithQuantities }} carte{{ totalWithQuantities > 1 ? 's' : '' }}
+        </UBadge>
+
+        <!-- Bouton mode sélection -->
+        <UButton
+          v-if="cards.length > 0"
+          :icon="selecting ? 'i-lucide-x' : 'i-lucide-check-square'"
+          :label="selecting ? 'Annuler' : 'Sélectionner'"
+          color="neutral"
+          variant="soft"
+          size="sm"
+          :disabled="exporting"
+          @click="toggleSelecting"
+        />
+
+        <!-- Export PDF -->
+        <UButton
+          v-if="cards.length > 0"
+          icon="i-lucide-file-down"
+          :label="exportLabel"
+          color="primary"
+          variant="soft"
+          size="sm"
+          :loading="exporting"
+          :disabled="selecting && selectedIds.size === 0"
+          @click="exportPdf"
+        />
+      </div>
+    </div>
+    <div class="p-4">
 
     <div v-if="cards.length === 0" class="text-center text-[var(--ui-text-dimmed)] py-8">
       <UIcon name="i-lucide-layers" class="text-4xl mb-3" />
@@ -116,7 +115,8 @@
         </div>
       </div>
     </template>
-  </UCard>
+    </div>
+  </div>
 </template>
 
 <script setup>

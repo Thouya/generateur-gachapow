@@ -1,10 +1,10 @@
 <template>
-  <UCard>
-    <template #header>
+  <div class="rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg)] shadow-sm">
+    <div class="px-4 py-3 border-b border-[var(--ui-border)]">
       <h3 class="text-lg font-semibold">{{ isEditing ? 'Modifier le type' : 'Nouveau type de carte' }}</h3>
-    </template>
+    </div>
 
-    <div class="space-y-4">
+    <div class="p-4 space-y-4">
       <UFormField label="Nom du type">
         <UInput v-model="form.name" placeholder="Ex: Monstre, Sort, Objet..." icon="i-lucide-tag" />
       </UFormField>
@@ -20,12 +20,14 @@
 
       <ImageUploader
         label="Fond de carte (couche 1)"
-        v-model="form.backgroundImage"
+        :model-value="form.backgroundImage"
+        @update:model-value="form.backgroundImage = $event"
       />
 
       <ImageUploader
         label="Illustration par défaut (couche 2)"
-        v-model="form.illustrationImage"
+        :model-value="form.illustrationImage"
+        @update:model-value="form.illustrationImage = $event"
       />
 
       <UFormField label="Colonne CSV pour illustration (optionnel)" hint="Si défini, l'illustration sera prise depuis cette colonne du CSV (URL ou base64)">
@@ -38,7 +40,8 @@
 
       <ImageUploader
         label="Dessus de carte (couche 3)"
-        v-model="form.overlayImage"
+        :model-value="form.overlayImage"
+        @update:model-value="form.overlayImage = $event"
       />
 
       <!-- Mapping visuel des zones de contenu -->
@@ -51,19 +54,17 @@
       />
     </div>
 
-    <template #footer>
-      <div class="flex gap-3">
-        <UButton color="primary" icon="i-lucide-save" :disabled="!form.name" @click="save">
-          {{ isEditing ? 'Mettre à jour' : 'Créer le type' }}
-        </UButton>
-        <UButton v-if="isEditing" variant="soft" @click="$emit('cancel')">Annuler</UButton>
-      </div>
-    </template>
-  </UCard>
+    <div class="px-4 py-3 border-t border-[var(--ui-border)] flex gap-3">
+      <UButton color="primary" icon="i-lucide-save" :disabled="!form.name" @click="save">
+        {{ isEditing ? 'Mettre à jour' : 'Créer le type' }}
+      </UButton>
+      <UButton v-if="isEditing" variant="soft" @click="$emit('cancel')">Annuler</UButton>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import ImageUploader from './ImageUploader.vue'
 import FieldMapper from './FieldMapper.vue'
 import { useCardsStore } from '../stores/cards.js'
@@ -77,23 +78,34 @@ const store = useCardsStore()
 
 const isEditing = ref(false)
 
-const defaultForm = () => ({
+const NONE_VALUE = '__none__'
+
+const form = reactive({
   name: '',
   width: 300,
   height: 420,
   backgroundImage: '',
   illustrationImage: '',
-  illustrationColumn: '',
+  illustrationColumn: NONE_VALUE,
   overlayImage: '',
   contentFields: [],
 })
 
-const form = ref(defaultForm())
+function resetForm(source = {}) {
+  form.name = source.name ?? ''
+  form.width = source.width ?? 300
+  form.height = source.height ?? 420
+  form.backgroundImage = source.backgroundImage ?? ''
+  form.illustrationImage = source.illustrationImage ?? ''
+  form.illustrationColumn = source.illustrationColumn || NONE_VALUE
+  form.overlayImage = source.overlayImage ?? ''
+  form.contentFields = source.contentFields ? source.contentFields.map((f) => ({ ...f })) : []
+}
 
 const csvColumns = computed(() => store.csvColumns)
 
 const illustrationColumnOptions = computed(() => [
-  { label: '-- Aucune --', value: '' },
+  { label: '-- Aucune --', value: NONE_VALUE },
   ...store.csvColumns.map((col) => ({ label: col, value: col })),
 ])
 
@@ -107,14 +119,10 @@ watch(
   (type) => {
     if (type) {
       isEditing.value = true
-      form.value = {
-        ...defaultForm(),
-        ...type,
-        contentFields: type.contentFields ? type.contentFields.map((f) => ({ ...f })) : [],
-      }
+      resetForm(type)
     } else {
       isEditing.value = false
-      form.value = defaultForm()
+      resetForm()
     }
   },
   { immediate: true }
@@ -122,14 +130,14 @@ watch(
 
 function save() {
   const data = {
-    name: form.value.name,
-    width: form.value.width,
-    height: form.value.height,
-    backgroundImage: form.value.backgroundImage,
-    illustrationImage: form.value.illustrationImage,
-    illustrationColumn: form.value.illustrationColumn,
-    overlayImage: form.value.overlayImage,
-    contentFields: form.value.contentFields.map((f) => ({ ...f })),
+    name: form.name,
+    width: form.width,
+    height: form.height,
+    backgroundImage: form.backgroundImage,
+    illustrationImage: form.illustrationImage,
+    illustrationColumn: form.illustrationColumn === NONE_VALUE ? '' : form.illustrationColumn,
+    overlayImage: form.overlayImage,
+    contentFields: form.contentFields.map((f) => ({ ...f })),
   }
 
   if (isEditing.value && props.editingType) {
@@ -139,7 +147,7 @@ function save() {
     store.selectCardType(id)
   }
 
-  form.value = defaultForm()
+  resetForm()
   isEditing.value = false
   emit('saved')
 }
