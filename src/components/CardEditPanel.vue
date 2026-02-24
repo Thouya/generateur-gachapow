@@ -48,6 +48,43 @@
                     <span>{{ localData.__illustration ? 'Changer' : 'Choisir' }}</span>
                   </button>
                   <input ref="illustInput" type="file" accept="image/*" class="hidden" @change="onIllustChange" />
+
+                  <!-- Recadrage par carte (mobile) -->
+                  <div v-if="localData.__illustration" class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs text-[var(--ui-text-muted)]">Recadrage</span>
+                      <div class="flex gap-1">
+                        <UButton v-if="!localData.__illustrationPosition" size="xs" variant="soft" icon="i-lucide-move" @click="enableIllustPositioning">Activer</UButton>
+                        <template v-else>
+                          <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-rotate-ccw" @click="resetIllustPositioning" />
+                          <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-x" @click="disableIllustPositioning" />
+                        </template>
+                      </div>
+                    </div>
+                    <template v-if="localData.__illustrationPosition">
+                      <div
+                        class="relative select-none rounded overflow-hidden mx-auto"
+                        :class="isDraggingIllust ? 'cursor-grabbing' : 'cursor-grab'"
+                        :style="{ width: illEditorW + 'px', height: illEditorH + 'px', background: '#c8c8c8' }"
+                        @mousedown.prevent="startIllustDrag"
+                        @touchstart.prevent="startIllustDragTouch"
+                      >
+                        <img v-if="cardType.backgroundImage" :src="cardType.backgroundImage" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:1;pointer-events:none;" draggable="false" alt="" />
+                        <img :src="localData.__illustration" :style="illEditorImgStyle" draggable="false" alt="" />
+                        <img v-if="cardType.overlayImage" :src="cardType.overlayImage" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:3;pointer-events:none;" draggable="false" alt="" />
+                        <div style="position:absolute;inset:0;z-index:10;pointer-events:none;display:flex;align-items:center;justify-content:center;opacity:0.45;">
+                          <div style="position:absolute;width:14px;height:1px;background:white;"></div>
+                          <div style="position:absolute;width:1px;height:14px;background:white;"></div>
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <UIcon name="i-lucide-zoom-out" class="w-3.5 h-3.5 shrink-0 text-[var(--ui-text-dimmed)]" />
+                        <input type="range" v-model.number="localData.__illustrationPosition.scale" min="0.3" max="5" step="0.05" class="flex-1 accent-[var(--ui-primary)] cursor-pointer" style="height:3px;" />
+                        <UIcon name="i-lucide-zoom-in" class="w-3.5 h-3.5 shrink-0 text-[var(--ui-text-dimmed)]" />
+                        <span class="text-xs text-[var(--ui-text-dimmed)] w-9 text-right tabular-nums">{{ Math.round((localData.__illustrationPosition.scale ?? 1) * 100) }}%</span>
+                      </div>
+                    </template>
+                  </div>
                 </div>
               </div>
 
@@ -77,6 +114,44 @@
                     <UIcon name="i-lucide-image-plus" />
                     <span>{{ localData.__illustration ? 'Changer l\'image' : 'Choisir une image' }}</span>
                   </button>
+
+                  <!-- Recadrage par carte (desktop) -->
+                  <div v-if="localData.__illustration" class="border-t border-[var(--ui-border)] pt-3 mt-1 space-y-2">
+                    <div class="flex items-center justify-between">
+                      <p class="text-xs font-semibold text-[var(--ui-text-muted)] uppercase tracking-wide">Recadrage</p>
+                      <div class="flex items-center gap-1">
+                        <UButton v-if="!localData.__illustrationPosition" size="xs" variant="soft" icon="i-lucide-move" @click="enableIllustPositioning">Activer</UButton>
+                        <template v-else>
+                          <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-rotate-ccw" title="Réinitialiser" @click="resetIllustPositioning" />
+                          <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-x" title="Désactiver" @click="disableIllustPositioning" />
+                        </template>
+                      </div>
+                    </div>
+                    <template v-if="localData.__illustrationPosition">
+                      <div
+                        class="relative select-none rounded-lg overflow-hidden mx-auto"
+                        :class="isDraggingIllust ? 'cursor-grabbing' : 'cursor-grab'"
+                        :style="{ width: illEditorW + 'px', height: illEditorH + 'px', background: '#c8c8c8' }"
+                        @mousedown.prevent="startIllustDrag"
+                        @touchstart.prevent="startIllustDragTouch"
+                      >
+                        <img v-if="cardType.backgroundImage" :src="cardType.backgroundImage" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:1;pointer-events:none;" draggable="false" alt="" />
+                        <img :src="localData.__illustration" :style="illEditorImgStyle" draggable="false" alt="" />
+                        <img v-if="cardType.overlayImage" :src="cardType.overlayImage" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:3;pointer-events:none;" draggable="false" alt="" />
+                        <div style="position:absolute;inset:0;z-index:10;pointer-events:none;display:flex;align-items:center;justify-content:center;opacity:0.45;">
+                          <div style="position:absolute;width:18px;height:1px;background:white;"></div>
+                          <div style="position:absolute;width:1px;height:18px;background:white;"></div>
+                        </div>
+                        <div style="position:absolute;bottom:4px;left:0;right:0;z-index:10;pointer-events:none;text-align:center;font-size:9px;color:rgba(255,255,255,0.7);">Glissez pour déplacer</div>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <UIcon name="i-lucide-zoom-out" class="w-4 h-4 shrink-0 text-[var(--ui-text-dimmed)]" />
+                        <input type="range" v-model.number="localData.__illustrationPosition.scale" min="0.3" max="5" step="0.05" class="flex-1 accent-[var(--ui-primary)] cursor-pointer" style="height:4px;" />
+                        <UIcon name="i-lucide-zoom-in" class="w-4 h-4 shrink-0 text-[var(--ui-text-dimmed)]" />
+                        <span class="text-xs text-[var(--ui-text-dimmed)] w-10 text-right tabular-nums">{{ Math.round((localData.__illustrationPosition.scale ?? 1) * 100) }}%</span>
+                      </div>
+                    </template>
+                  </div>
                 </div>
               </div>
             </div>
@@ -181,7 +256,13 @@ function checkMobile() {
   isMobile.value = window.innerWidth < 768
 }
 onMounted(() => { checkMobile(); window.addEventListener('resize', checkMobile) })
-onUnmounted(() => { window.removeEventListener('resize', checkMobile) })
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+  window.removeEventListener('mousemove', onIllustDrag)
+  window.removeEventListener('mouseup', stopIllustDrag)
+  window.removeEventListener('touchmove', onIllustDragTouch)
+  window.removeEventListener('touchend', stopIllustDragTouch)
+})
 
 function autoResizeTA(el) {
   el.style.height = 'auto'
@@ -231,6 +312,88 @@ const scaleStyleMobile = computed(() => ({
   transform: `scale(${scaleMobile.value})`, transformOrigin: 'top left',
   position: 'absolute', top: 0, left: 0,
 }))
+
+// ── Recadrage illustration par carte ────────────────────────────────────────
+const illEditorW = 176 // fixe, centré dans la colonne gauche
+const illEditorH = computed(() => Math.round(illEditorW * cardNaturalHeight.value / cardNaturalWidth.value))
+const illEditorScale = computed(() => illEditorW / cardNaturalWidth.value)
+
+const isDraggingIllust = ref(false)
+const dragStartIllust = ref({ x: 0, y: 0, offsetX: 0, offsetY: 0 })
+
+function enableIllustPositioning() {
+  localData.value.__illustrationPosition = { offsetX: 0, offsetY: 0, scale: 1 }
+}
+function disableIllustPositioning() {
+  localData.value.__illustrationPosition = null
+}
+function resetIllustPositioning() {
+  const pos = localData.value.__illustrationPosition
+  if (!pos) return
+  pos.offsetX = 0
+  pos.offsetY = 0
+  pos.scale = 1
+}
+
+const illEditorImgStyle = computed(() => {
+  const pos = localData.value.__illustrationPosition
+  if (!pos) return {}
+  const ps = illEditorScale.value
+  return {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    zIndex: 2,
+    transform: `translate(calc(-50% + ${(pos.offsetX ?? 0) * ps}px), calc(-50% + ${(pos.offsetY ?? 0) * ps}px)) scale(${pos.scale ?? 1})`,
+  }
+})
+
+function startIllustDrag(e) {
+  const pos = localData.value.__illustrationPosition
+  if (!pos) return
+  isDraggingIllust.value = true
+  dragStartIllust.value = { x: e.clientX, y: e.clientY, offsetX: pos.offsetX ?? 0, offsetY: pos.offsetY ?? 0 }
+  window.addEventListener('mousemove', onIllustDrag)
+  window.addEventListener('mouseup', stopIllustDrag)
+}
+function onIllustDrag(e) {
+  const pos = localData.value.__illustrationPosition
+  if (!isDraggingIllust.value || !pos) return
+  const ps = illEditorScale.value
+  pos.offsetX = dragStartIllust.value.offsetX + (e.clientX - dragStartIllust.value.x) / ps
+  pos.offsetY = dragStartIllust.value.offsetY + (e.clientY - dragStartIllust.value.y) / ps
+}
+function stopIllustDrag() {
+  isDraggingIllust.value = false
+  window.removeEventListener('mousemove', onIllustDrag)
+  window.removeEventListener('mouseup', stopIllustDrag)
+}
+function startIllustDragTouch(e) {
+  const touch = e.touches[0]
+  const pos = localData.value.__illustrationPosition
+  if (!touch || !pos) return
+  isDraggingIllust.value = true
+  dragStartIllust.value = { x: touch.clientX, y: touch.clientY, offsetX: pos.offsetX ?? 0, offsetY: pos.offsetY ?? 0 }
+  window.addEventListener('touchmove', onIllustDragTouch, { passive: false })
+  window.addEventListener('touchend', stopIllustDragTouch)
+}
+function onIllustDragTouch(e) {
+  e.preventDefault()
+  const pos = localData.value.__illustrationPosition
+  if (!isDraggingIllust.value || !pos) return
+  const touch = e.touches[0]
+  const ps = illEditorScale.value
+  pos.offsetX = dragStartIllust.value.offsetX + (touch.clientX - dragStartIllust.value.x) / ps
+  pos.offsetY = dragStartIllust.value.offsetY + (touch.clientY - dragStartIllust.value.y) / ps
+}
+function stopIllustDragTouch() {
+  isDraggingIllust.value = false
+  window.removeEventListener('touchmove', onIllustDragTouch)
+  window.removeEventListener('touchend', stopIllustDragTouch)
+}
 
 function onIllustChange(event) {
   const file = event.target.files[0]

@@ -60,8 +60,9 @@ const cardStyle = computed(() => ({
 }))
 
 // Illustration : mode libre (illustration_position défini) ou mode héritage (contain centré)
+// La position par carte (__illustrationPosition dans cardData) a la priorité sur celle du type
 const illustrationTransformStyle = computed(() => {
-  const pos = props.cardType.illustrationPosition
+  const pos = props.cardData.__illustrationPosition ?? props.cardType.illustrationPosition
   if (!pos) return {}
   const offsetX = pos.offsetX ?? 0
   const offsetY = pos.offsetY ?? 0
