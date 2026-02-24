@@ -24,6 +24,7 @@ function dbToCardType(row) {
     backgroundImage: row.background_image || '',
     illustrationImage: row.illustration_image || '',
     illustrationColumn: row.illustration_column || '',
+    illustrationPosition: row.illustration_position ?? null,
     overlayImage: row.overlay_image || '',
     contentFields: row.content_fields || [],
     csvData: row.csv_data || [],
@@ -41,6 +42,7 @@ function cardTypeToDb(ct, projectId) {
     background_image: ct.backgroundImage || '',
     illustration_image: ct.illustrationImage || '',
     illustration_column: ct.illustrationColumn || '',
+    illustration_position: ct.illustrationPosition ?? null,
     overlay_image: ct.overlayImage || '',
     content_fields: ct.contentFields || [],
     csv_data: ct.csvData || [],
@@ -398,6 +400,7 @@ export const useCardsStore = defineStore('cards', () => {
     if ('backgroundImage' in updates) dbUp.background_image = updates.backgroundImage
     if ('illustrationImage' in updates) dbUp.illustration_image = updates.illustrationImage
     if ('illustrationColumn' in updates) dbUp.illustration_column = updates.illustrationColumn
+    if ('illustrationPosition' in updates) dbUp.illustration_position = updates.illustrationPosition
     if ('overlayImage' in updates) dbUp.overlay_image = updates.overlayImage
     if ('contentFields' in updates) dbUp.content_fields = updates.contentFields
     if ('csvData' in updates) dbUp.csv_data = updates.csvData

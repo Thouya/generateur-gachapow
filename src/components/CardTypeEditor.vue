@@ -30,6 +30,106 @@
         @update:model-value="form.illustrationImage = $event"
       />
 
+      <!-- Recadrage libre de l'illustration -->
+      <div
+        v-if="form.illustrationImage"
+        class="rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-3 space-y-3"
+      >
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-[var(--ui-text)]">Recadrage de l'illustration</span>
+          <div class="flex items-center gap-1.5">
+            <UButton
+              v-if="!form.illustrationPosition"
+              size="xs"
+              variant="soft"
+              icon="i-lucide-move"
+              @click="enablePositioning"
+            >Activer</UButton>
+            <template v-else>
+              <UButton
+                size="xs"
+                variant="ghost"
+                color="neutral"
+                icon="i-lucide-rotate-ccw"
+                title="Réinitialiser"
+                @click="resetIllustrationPosition"
+              />
+              <UButton
+                size="xs"
+                variant="ghost"
+                color="neutral"
+                icon="i-lucide-x"
+                title="Désactiver le recadrage"
+                @click="disablePositioning"
+              />
+            </template>
+          </div>
+        </div>
+
+        <template v-if="form.illustrationPosition">
+          <!-- Mini preview interactive (glisser pour déplacer) -->
+          <div
+            class="relative select-none rounded-lg overflow-hidden mx-auto"
+            :class="isDragging ? 'cursor-grabbing' : 'cursor-grab'"
+            :style="{ width: previewW + 'px', height: previewH + 'px', background: '#c8c8c8' }"
+            @mousedown.prevent="startDrag"
+            @touchstart.prevent="startDragTouch"
+          >
+            <!-- Fond -->
+            <img
+              v-if="form.backgroundImage"
+              :src="form.backgroundImage"
+              style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:1; pointer-events:none;"
+              draggable="false"
+              alt=""
+            />
+            <!-- Illustration positionnée -->
+            <img
+              v-if="form.illustrationImage"
+              :src="form.illustrationImage"
+              :style="illustrationEditorStyle"
+              draggable="false"
+              alt=""
+            />
+            <!-- Dessus -->
+            <img
+              v-if="form.overlayImage"
+              :src="form.overlayImage"
+              style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:3; pointer-events:none;"
+              draggable="false"
+              alt=""
+            />
+            <!-- Viseur central -->
+            <div style="position:absolute; inset:0; z-index:10; pointer-events:none; display:flex; align-items:center; justify-content:center; opacity:0.45;">
+              <div style="position:absolute; width:18px; height:1px; background:white;"></div>
+              <div style="position:absolute; width:1px; height:18px; background:white;"></div>
+            </div>
+            <!-- Hint -->
+            <div style="position:absolute; bottom:4px; left:0; right:0; z-index:10; pointer-events:none; text-align:center; font-size:9px; color:rgba(255,255,255,0.7); letter-spacing:0.02em;">
+              Glissez pour déplacer
+            </div>
+          </div>
+
+          <!-- Slider zoom -->
+          <div class="flex items-center gap-2">
+            <UIcon name="i-lucide-zoom-out" class="w-4 h-4 shrink-0 text-[var(--ui-text-dimmed)]" />
+            <input
+              type="range"
+              v-model.number="form.illustrationPosition.scale"
+              min="0.3"
+              max="5"
+              step="0.05"
+              class="flex-1 accent-[var(--ui-primary)] cursor-pointer"
+              style="height:4px;"
+            />
+            <UIcon name="i-lucide-zoom-in" class="w-4 h-4 shrink-0 text-[var(--ui-text-dimmed)]" />
+            <span class="text-xs text-[var(--ui-text-dimmed)] w-10 text-right tabular-nums">
+              {{ Math.round((form.illustrationPosition.scale ?? 1) * 100) }}%
+            </span>
+          </div>
+        </template>
+      </div>
+
       <UFormField label="Colonne CSV pour illustration (optionnel)" hint="Si défini, l'illustration sera prise depuis cette colonne du CSV (URL ou base64)">
         <USelect
           v-model="form.illustrationColumn"
@@ -64,7 +164,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, computed } from 'vue'
+import { ref, reactive, watch, computed, onUnmounted } from 'vue'
 import ImageUploader from './ImageUploader.vue'
 import FieldMapper from './FieldMapper.vue'
 import { useCardsStore } from '../stores/cards.js'
@@ -89,6 +189,7 @@ const form = reactive({
   backgroundImage: '',
   illustrationImage: '',
   illustrationColumn: NONE_VALUE,
+  illustrationPosition: null, // null = mode héritage (contain), object = mode libre (cover + transform)
   overlayImage: '',
   contentFields: [],
 })
@@ -100,6 +201,9 @@ function resetForm(source = {}) {
   form.backgroundImage = source.backgroundImage ?? ''
   form.illustrationImage = source.illustrationImage ?? ''
   form.illustrationColumn = source.illustrationColumn || NONE_VALUE
+  form.illustrationPosition = source.illustrationPosition
+    ? { ...source.illustrationPosition }
+    : null
   form.overlayImage = source.overlayImage ?? ''
   form.contentFields = source.contentFields ? source.contentFields.map((f) => ({ ...f })) : []
 }
@@ -139,6 +243,111 @@ watch(
   { immediate: true }
 )
 
+// ── Recadrage illustration ───────────────────────────────────────────────────
+// Dimensions de la mini-preview (ratio conservé, max 200px de large)
+const previewW = computed(() => Math.min(form.width || 300, 200))
+const previewH = computed(() => {
+  const ratio = (form.height || 420) / (form.width || 300)
+  return Math.round(previewW.value * ratio)
+})
+// Facteur de conversion preview ↔ carte
+const previewScale = computed(() => previewW.value / (form.width || 300))
+
+function enablePositioning() {
+  form.illustrationPosition = { offsetX: 0, offsetY: 0, scale: 1 }
+}
+function disablePositioning() {
+  form.illustrationPosition = null
+}
+function resetIllustrationPosition() {
+  if (!form.illustrationPosition) return
+  form.illustrationPosition.offsetX = 0
+  form.illustrationPosition.offsetY = 0
+  form.illustrationPosition.scale = 1
+}
+
+// Style appliqué à l'image dans la mini-preview
+const illustrationEditorStyle = computed(() => {
+  if (!form.illustrationPosition) return {}
+  const ps = previewScale.value
+  const offsetX = (form.illustrationPosition.offsetX ?? 0) * ps
+  const offsetY = (form.illustrationPosition.offsetY ?? 0) * ps
+  const s = form.illustrationPosition.scale ?? 1
+  return {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    zIndex: 2,
+    transform: `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${s})`,
+  }
+})
+
+// Drag
+const isDragging = ref(false)
+const dragStart = ref({ x: 0, y: 0, offsetX: 0, offsetY: 0 })
+
+function startDrag(e) {
+  if (!form.illustrationPosition) return
+  isDragging.value = true
+  dragStart.value = {
+    x: e.clientX,
+    y: e.clientY,
+    offsetX: form.illustrationPosition.offsetX ?? 0,
+    offsetY: form.illustrationPosition.offsetY ?? 0,
+  }
+  window.addEventListener('mousemove', onDrag)
+  window.addEventListener('mouseup', stopDrag)
+}
+function onDrag(e) {
+  if (!isDragging.value || !form.illustrationPosition) return
+  const ps = previewScale.value
+  form.illustrationPosition.offsetX = dragStart.value.offsetX + (e.clientX - dragStart.value.x) / ps
+  form.illustrationPosition.offsetY = dragStart.value.offsetY + (e.clientY - dragStart.value.y) / ps
+}
+function stopDrag() {
+  isDragging.value = false
+  window.removeEventListener('mousemove', onDrag)
+  window.removeEventListener('mouseup', stopDrag)
+}
+
+// Touch
+function startDragTouch(e) {
+  const touch = e.touches[0]
+  if (!touch || !form.illustrationPosition) return
+  isDragging.value = true
+  dragStart.value = {
+    x: touch.clientX,
+    y: touch.clientY,
+    offsetX: form.illustrationPosition.offsetX ?? 0,
+    offsetY: form.illustrationPosition.offsetY ?? 0,
+  }
+  window.addEventListener('touchmove', onDragTouch, { passive: false })
+  window.addEventListener('touchend', stopDragTouch)
+}
+function onDragTouch(e) {
+  e.preventDefault()
+  if (!isDragging.value || !form.illustrationPosition) return
+  const touch = e.touches[0]
+  const ps = previewScale.value
+  form.illustrationPosition.offsetX = dragStart.value.offsetX + (touch.clientX - dragStart.value.x) / ps
+  form.illustrationPosition.offsetY = dragStart.value.offsetY + (touch.clientY - dragStart.value.y) / ps
+}
+function stopDragTouch() {
+  isDragging.value = false
+  window.removeEventListener('touchmove', onDragTouch)
+  window.removeEventListener('touchend', stopDragTouch)
+}
+
+onUnmounted(() => {
+  window.removeEventListener('mousemove', onDrag)
+  window.removeEventListener('mouseup', stopDrag)
+  window.removeEventListener('touchmove', onDragTouch)
+  window.removeEventListener('touchend', stopDragTouch)
+})
+
 function save() {
   const data = {
     name: form.name,
@@ -147,6 +356,7 @@ function save() {
     backgroundImage: form.backgroundImage,
     illustrationImage: form.illustrationImage,
     illustrationColumn: form.illustrationColumn === NONE_VALUE ? '' : form.illustrationColumn,
+    illustrationPosition: form.illustrationPosition ? { ...form.illustrationPosition } : null,
     overlayImage: form.overlayImage,
     contentFields: form.contentFields.map((f) => ({ ...f })),
   }

@@ -13,7 +13,9 @@
       v-if="illustrationSrc"
       :src="illustrationSrc"
       class="card-layer card-layer--illustration"
+      :style="illustrationTransformStyle"
       alt="Illustration"
+      draggable="false"
     />
 
     <!-- Couche 3 : Dessus de carte -->
@@ -56,6 +58,21 @@ const cardStyle = computed(() => ({
   width: (props.cardType.width || 300) + 'px',
   height: (props.cardType.height || 420) + 'px',
 }))
+
+// Illustration : mode libre (illustration_position défini) ou mode héritage (contain centré)
+const illustrationTransformStyle = computed(() => {
+  const pos = props.cardType.illustrationPosition
+  if (!pos) return {}
+  const offsetX = pos.offsetX ?? 0
+  const offsetY = pos.offsetY ?? 0
+  const scale = pos.scale ?? 1
+  return {
+    objectFit: 'cover',
+    top: '50%',
+    left: '50%',
+    transform: `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${scale})`,
+  }
+})
 
 const illustrationSrc = computed(() => {
   // Priorité 1 : illustration personnalisée par carte
