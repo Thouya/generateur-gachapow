@@ -1,7 +1,4 @@
 <template>
-  <UApp>
-    <Analytics />
-    <SpeedInsights />
     <!-- Chargement auth -->
     <div v-if="authLoading" class="min-h-screen flex items-center justify-center">
       <UIcon name="i-lucide-loader-2" class="text-4xl animate-spin text-[var(--ui-text-dimmed)]" />
@@ -71,6 +68,21 @@
                 >
                   <UIcon name="i-lucide-package" class="shrink-0 text-xs" />
                   <span>Matériel</span>
+                </button>
+
+                <!-- Questionnaires -->
+                <button
+                  class="flex items-center gap-2 px-2 py-1.5 rounded-[var(--ui-radius)] text-left text-sm transition-colors w-full"
+                  :class="currentView === 'questionnaires'
+                    ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-medium'
+                    : 'text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-text)]'"
+                  @click="goToQuestionnaires"
+                >
+                  <UIcon name="i-lucide-clipboard-list" class="shrink-0 text-xs" />
+                  <span>Questionnaires</span>
+                  <span v-if="surveyStore.questionnaires.length" class="ml-auto text-xs text-[var(--ui-text-dimmed)]">
+                    {{ surveyStore.questionnaires.length }}
+                  </span>
                 </button>
 
                 <!-- Section Cartes (collapsible) -->
@@ -242,6 +254,11 @@
               <ProjectMaterials />
             </div>
 
+            <!-- Vue : Questionnaires du projet -->
+            <div v-else-if="currentView === 'questionnaires'">
+              <QuestionnaireBuilder />
+            </div>
+
             <!-- Vue : Paramètres -->
             <div v-else-if="currentView === 'settings'">
               <div class="rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg)] shadow-sm max-w-lg">
@@ -278,13 +295,13 @@
         @close="historyOpen = false"
       />
     </UDashboardGroup>
-  </UApp>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAuth } from './composables/useAuth.js'
 import { useCardsStore } from './stores/cards.js'
+import { useSurveyStore } from './stores/survey.js'
 import AuthGate from './components/AuthGate.vue'
 import CardTypeEditor from './components/CardTypeEditor.vue'
 import CsvUploader from './components/CsvUploader.vue'
@@ -292,12 +309,12 @@ import DataWorkbench from './components/DataWorkbench.vue'
 import CardGallery from './components/CardGallery.vue'
 import CardTypeHistory from './components/CardTypeHistory.vue'
 import ProjectRules from './components/ProjectRules.vue'
-import { Analytics } from '@vercel/analytics/vue'
-import { SpeedInsights } from '@vercel/speed-insights/vue'
 import ProjectMaterials from './components/ProjectMaterials.vue'
+import QuestionnaireBuilder from './components/QuestionnaireBuilder.vue'
 
 const { user: authUser, loading: authLoading, init: initAuth, signOut } = useAuth()
 const store = useCardsStore()
+const surveyStore = useSurveyStore()
 
 const historyOpen = ref(false)
 const historyCardType = ref(null)
@@ -312,6 +329,11 @@ onMounted(() => {
 
 watch(authUser, (user) => {
   if (user) store.init()
+})
+
+// Charger les questionnaires quand le projet change
+watch(() => store.selectedProjectId, (id) => {
+  if (id) surveyStore.loadForProject(id)
 })
 
 // Quand les projets sont chargés depuis la DB, naviguer vers le bon état
@@ -349,6 +371,7 @@ const viewTitle = computed(() => {
   if (currentView.value === 'settings') return 'Paramètres'
   if (currentView.value === 'rules') return `Règles — ${store.selectedProject?.name ?? ''}`
   if (currentView.value === 'materials') return `Matériel — ${store.selectedProject?.name ?? ''}`
+  if (currentView.value === 'questionnaires') return `Questionnaires — ${store.selectedProject?.name ?? ''}`
   if (currentView.value === 'cardtype') {
     const tabLabel = tabs.value.find((t) => t.key === currentTab.value)?.label ?? ''
     return store.selectedCardType
@@ -398,6 +421,10 @@ function goToRules() {
 
 function goToMaterials() {
   currentView.value = 'materials'
+}
+
+function goToQuestionnaires() {
+  currentView.value = 'questionnaires'
 }
 
 function onCardTypeSaved() {
