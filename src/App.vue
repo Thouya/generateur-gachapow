@@ -1,6 +1,7 @@
 <template>
   <UApp>
     <Analytics />
+    <SpeedInsights />
     <!-- Chargement auth -->
     <div v-if="authLoading" class="min-h-screen flex items-center justify-center">
       <UIcon name="i-lucide-loader-2" class="text-4xl animate-spin text-[var(--ui-text-dimmed)]" />
@@ -265,6 +266,7 @@ import CardGallery from './components/CardGallery.vue'
 import CardTypeHistory from './components/CardTypeHistory.vue'
 import ProjectRules from './components/ProjectRules.vue'
 import { Analytics } from '@vercel/analytics/vue'
+import { SpeedInsights } from '@vercel/speed-insights/vue'
 
 const { user: authUser, loading: authLoading, init: initAuth, signOut } = useAuth()
 const store = useCardsStore()
