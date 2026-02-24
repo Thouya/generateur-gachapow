@@ -31,9 +31,13 @@
                 </div>
                 <div class="flex-1 min-w-0 flex flex-col gap-2">
                   <p class="text-xs font-semibold text-[var(--ui-text-muted)] uppercase tracking-wide">Illustration</p>
-                  <div v-if="localData.__illustration" class="relative rounded overflow-hidden border border-[var(--ui-border)]">
-                    <img :src="localData.__illustration" class="w-full object-cover max-h-20" alt="" />
+                  <div v-if="localData.__illustration || illustLocalPreview" class="relative rounded overflow-hidden border border-[var(--ui-border)]">
+                    <img :src="illustLocalPreview || localData.__illustration" class="w-full object-cover max-h-20" alt="" />
+                    <div v-if="illustUploading" class="absolute inset-0 bg-black/45 flex items-center justify-center">
+                      <UIcon name="i-lucide-loader-circle" class="text-white text-base animate-spin" />
+                    </div>
                     <button
+                      v-if="!illustUploading"
                       class="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center shadow transition-colors"
                       @click="localData.__illustration = ''"
                     >
@@ -41,11 +45,12 @@
                     </button>
                   </div>
                   <button
-                    class="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-[var(--ui-radius)] border-2 border-dashed border-[var(--ui-border)] text-xs text-[var(--ui-text-muted)] hover:border-[var(--ui-primary)] hover:text-[var(--ui-primary)] transition-colors cursor-pointer"
+                    :disabled="illustUploading"
+                    class="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-[var(--ui-radius)] border-2 border-dashed border-[var(--ui-border)] text-xs text-[var(--ui-text-muted)] hover:border-[var(--ui-primary)] hover:text-[var(--ui-primary)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     @click="illustInput.click()"
                   >
                     <UIcon name="i-lucide-image-plus" class="text-sm" />
-                    <span>{{ localData.__illustration ? 'Changer' : 'Choisir' }}</span>
+                    <span>{{ (localData.__illustration || illustLocalPreview) ? 'Changer' : 'Choisir' }}</span>
                   </button>
                   <input ref="illustInput" type="file" accept="image/*" class="hidden" @change="onIllustChange" />
 
@@ -98,9 +103,13 @@
 
                 <div class="w-full">
                   <p class="text-xs font-semibold text-[var(--ui-text-muted)] uppercase tracking-wide mb-2">Illustration</p>
-                  <div v-if="localData.__illustration" class="relative mb-2 rounded-[var(--ui-radius)] overflow-hidden border border-[var(--ui-border)]">
-                    <img :src="localData.__illustration" class="w-full object-cover" alt="" />
+                  <div v-if="localData.__illustration || illustLocalPreview" class="relative mb-2 rounded-[var(--ui-radius)] overflow-hidden border border-[var(--ui-border)]">
+                    <img :src="illustLocalPreview || localData.__illustration" class="w-full object-cover" alt="" />
+                    <div v-if="illustUploading" class="absolute inset-0 bg-black/45 flex items-center justify-center">
+                      <UIcon name="i-lucide-loader-circle" class="text-white text-2xl animate-spin" />
+                    </div>
                     <button
+                      v-if="!illustUploading"
                       class="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow transition-colors"
                       @click="localData.__illustration = ''"
                     >
@@ -108,11 +117,12 @@
                     </button>
                   </div>
                   <button
-                    class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-[var(--ui-radius)] border-2 border-dashed border-[var(--ui-border)] text-sm text-[var(--ui-text-muted)] hover:border-[var(--ui-primary)] hover:text-[var(--ui-primary)] transition-colors cursor-pointer"
+                    :disabled="illustUploading"
+                    class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-[var(--ui-radius)] border-2 border-dashed border-[var(--ui-border)] text-sm text-[var(--ui-text-muted)] hover:border-[var(--ui-primary)] hover:text-[var(--ui-primary)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     @click="illustInput.click()"
                   >
                     <UIcon name="i-lucide-image-plus" />
-                    <span>{{ localData.__illustration ? 'Changer l\'image' : 'Choisir une image' }}</span>
+                    <span>{{ (localData.__illustration || illustLocalPreview) ? 'Changer l\'image' : 'Choisir une image' }}</span>
                   </button>
 
                   <!-- Recadrage par carte (desktop) -->
@@ -245,6 +255,8 @@ const store = useCardsStore()
 const localData = ref({})
 const illustInput = ref(null)
 const activeTab = ref('data')
+const illustUploading = ref(false)
+const illustLocalPreview = ref(null)
 const isMobile = ref(false)
 
 const panelTabs = [
@@ -395,15 +407,34 @@ function stopIllustDragTouch() {
   window.removeEventListener('touchend', stopIllustDragTouch)
 }
 
-function onIllustChange(event) {
+async function onIllustChange(event) {
   const file = event.target.files[0]
   if (!file || !file.type.startsWith('image/')) return
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    localData.value = { ...localData.value, __illustration: e.target.result }
-  }
-  reader.readAsDataURL(file)
   event.target.value = ''
+
+  // Aperçu immédiat
+  const objectUrl = URL.createObjectURL(file)
+  illustLocalPreview.value = objectUrl
+  illustUploading.value = true
+
+  const result = await store.uploadCardImage(file, 'card-illustration').catch((err) => ({ error: String(err) }))
+  illustUploading.value = false
+
+  if (result?.url) {
+    URL.revokeObjectURL(objectUrl)
+    illustLocalPreview.value = null
+    localData.value = { ...localData.value, __illustration: result.url }
+  } else {
+    // Fallback base64 si l'upload échoue
+    console.error('[CardEditPanel] Upload illustration échoué :', result?.error)
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      URL.revokeObjectURL(objectUrl)
+      illustLocalPreview.value = null
+      localData.value = { ...localData.value, __illustration: e.target.result }
+    }
+    reader.readAsDataURL(file)
+  }
 }
 
 function save() {

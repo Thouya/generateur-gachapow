@@ -295,6 +295,25 @@ export const useCardsStore = defineStore('cards', () => {
     db(supabase.from('projects').update({ materials: p.materials }).eq('id', p.id))
   }
 
+  // ── Images (Supabase Storage) ────────────────────────
+  /**
+   * Upload une image dans le bucket "card-images" et retourne l'URL publique.
+   * folder : 'background' | 'illustration' | 'overlay' | 'card-illustration' | ...
+   * Retourne { url } en cas de succès, { error } en cas d'échec.
+   */
+  async function uploadCardImage(file, folder = 'misc') {
+    const projectId = selectedProject.value?.id
+    if (!projectId) return { error: 'Aucun projet sélectionné' }
+    const ext = file.name.split('.').pop().toLowerCase()
+    const path = `${projectId}/${folder}/${Date.now()}.${ext}`
+    const { error } = await supabase.storage
+      .from('card-images')
+      .upload(path, file, { upsert: false, contentType: file.type })
+    if (error) return { error: error.message }
+    const { data: { publicUrl } } = supabase.storage.from('card-images').getPublicUrl(path)
+    return { url: publicUrl, path }
+  }
+
   function renameProject(id, name) {
     const p = projects.value.find((proj) => proj.id === id)
     if (!p) return
@@ -656,6 +675,7 @@ export const useCardsStore = defineStore('cards', () => {
     deleteMaterial,
     uploadMaterialFile,
     deleteMaterialFile,
+    uploadCardImage,
     addCardType,
     updateCardType,
     duplicateCardType,

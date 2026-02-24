@@ -21,12 +21,14 @@
       <ImageUploader
         label="Fond de carte (couche 1)"
         :model-value="form.backgroundImage"
+        :upload="uploadBg"
         @update:model-value="form.backgroundImage = $event"
       />
 
       <ImageUploader
         label="Illustration par défaut (couche 2)"
         :model-value="form.illustrationImage"
+        :upload="uploadIllust"
         @update:model-value="form.illustrationImage = $event"
       />
 
@@ -141,6 +143,7 @@
       <ImageUploader
         label="Dessus de carte (couche 3)"
         :model-value="form.overlayImage"
+        :upload="uploadOverlay"
         @update:model-value="form.overlayImage = $event"
       />
 
@@ -181,6 +184,11 @@ const store = useCardsStore()
 const isEditing = ref(false)
 
 const NONE_VALUE = '__none__'
+
+// Upload vers Supabase Storage (évite de stocker du base64 en DB)
+const uploadBg = (file) => store.uploadCardImage(file, 'background')
+const uploadIllust = (file) => store.uploadCardImage(file, 'illustration')
+const uploadOverlay = (file) => store.uploadCardImage(file, 'overlay')
 
 const form = reactive({
   name: '',
