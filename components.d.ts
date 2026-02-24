@@ -22,6 +22,7 @@ declare module 'vue' {
     FieldMapper: typeof import('./src/components/FieldMapper.vue')['default']
     ImageUploader: typeof import('./src/components/ImageUploader.vue')['default']
     ProjectManager: typeof import('./src/components/ProjectManager.vue')['default']
+    ProjectMaterials: typeof import('./src/components/ProjectMaterials.vue')['default']
     ProjectRules: typeof import('./src/components/ProjectRules.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']

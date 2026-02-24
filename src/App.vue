@@ -91,6 +91,18 @@
                   <span>Règles</span>
                 </button>
 
+                <!-- Matériel du projet -->
+                <button
+                  class="flex items-center gap-2 px-3 py-1.5 rounded-[var(--ui-radius)] text-left text-sm transition-colors w-full"
+                  :class="currentView === 'materials'
+                    ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-medium'
+                    : 'text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-text)]'"
+                  @click="goToMaterials"
+                >
+                  <UIcon name="i-lucide-package" class="shrink-0 text-xs" />
+                  <span>Matériel</span>
+                </button>
+
                 <!-- Ajouter un type de carte -->
                 <button
                   class="flex items-center gap-2 px-3 py-1.5 rounded-[var(--ui-radius)] text-left text-sm text-[var(--ui-text-dimmed)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-primary)] transition-colors w-full"
@@ -215,6 +227,11 @@
               <ProjectRules />
             </div>
 
+            <!-- Vue : Matériel du projet -->
+            <div v-else-if="currentView === 'materials'">
+              <ProjectMaterials />
+            </div>
+
             <!-- Vue : Paramètres -->
             <div v-else-if="currentView === 'settings'">
               <div class="rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg)] shadow-sm max-w-lg">
@@ -267,6 +284,7 @@ import CardTypeHistory from './components/CardTypeHistory.vue'
 import ProjectRules from './components/ProjectRules.vue'
 import { Analytics } from '@vercel/analytics/vue'
 import { SpeedInsights } from '@vercel/speed-insights/vue'
+import ProjectMaterials from './components/ProjectMaterials.vue'
 
 const { user: authUser, loading: authLoading, init: initAuth, signOut } = useAuth()
 const store = useCardsStore()
@@ -319,6 +337,7 @@ const viewTitle = computed(() => {
   if (currentView.value === 'newtype') return 'Nouveau type de carte'
   if (currentView.value === 'settings') return 'Paramètres'
   if (currentView.value === 'rules') return `Règles — ${store.selectedProject?.name ?? ''}`
+  if (currentView.value === 'materials') return `Matériel — ${store.selectedProject?.name ?? ''}`
   if (currentView.value === 'cardtype') {
     const tabLabel = tabs.value.find((t) => t.key === currentTab.value)?.label ?? ''
     return store.selectedCardType
@@ -364,6 +383,10 @@ function createNewCardType() {
 
 function goToRules() {
   currentView.value = 'rules'
+}
+
+function goToMaterials() {
+  currentView.value = 'materials'
 }
 
 function onCardTypeSaved() {

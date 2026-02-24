@@ -111,6 +111,9 @@ export const useCardsStore = defineStore('cards', () => {
   const csvData = computed(() => selectedCardType.value?.csvData ?? [])
   const csvColumns = computed(() => selectedCardType.value?.csvColumns ?? [])
 
+  // Matériel : au niveau du projet sélectionné
+  const materials = computed(() => selectedProject.value?.materials ?? [])
+
   // ── Initialisation ──────────────────────────────────
   async function init() {
     loading.value = true
@@ -131,6 +134,7 @@ export const useCardsStore = defineStore('cards', () => {
           id: p.id,
           name: p.name,
           rules: p.rules || '',
+          materials: p.materials || [],
           selectedCardTypeId: p.selected_card_type_id,
           cardTypes: (ctRows || []).filter((ct) => ct.project_id === p.id).map(dbToCardType),
           generatedCards: (gcRows || [])
@@ -210,6 +214,7 @@ export const useCardsStore = defineStore('cards', () => {
       id,
       name,
       rules: '',
+      materials: [],
       cardTypes: [],
       generatedCards: [],
       selectedCardTypeId: null,
@@ -217,7 +222,7 @@ export const useCardsStore = defineStore('cards', () => {
     projects.value.push(project)
     selectedProjectId.value = id
     localStorage.setItem('gachapow-selected-project', id)
-    db(supabase.from('projects').insert({ id, name, user_id: userId.value, rules: '' }))
+    db(supabase.from('projects').insert({ id, name, user_id: userId.value, rules: '', materials: [] }))
     return id
   }
 
@@ -226,6 +231,64 @@ export const useCardsStore = defineStore('cards', () => {
     if (!p) return
     p.rules = rules
     db(supabase.from('projects').update({ rules }).eq('id', id))
+  }
+
+  // ── Matériel ────────────────────────────────────────
+  function addMaterial() {
+    const p = selectedProject.value
+    if (!p) return null
+    const id = uid()
+    const item = { id, name: 'Nouvel élément', quantity: 1, description: '', notes: '', files: [] }
+    p.materials = [...(p.materials || []), item]
+    db(supabase.from('projects').update({ materials: p.materials }).eq('id', p.id))
+    return id
+  }
+
+  function updateMaterial(id, updates) {
+    const p = selectedProject.value
+    if (!p) return
+    const idx = (p.materials || []).findIndex((m) => m.id === id)
+    if (idx === -1) return
+    p.materials[idx] = { ...p.materials[idx], ...updates }
+    db(supabase.from('projects').update({ materials: p.materials }).eq('id', p.id))
+  }
+
+  function deleteMaterial(id) {
+    const p = selectedProject.value
+    if (!p) return
+    const item = (p.materials || []).find((m) => m.id === id)
+    if (item?.files?.length) {
+      item.files.forEach((f) => {
+        supabase.storage.from('materials').remove([f.path])
+      })
+    }
+    p.materials = (p.materials || []).filter((m) => m.id !== id)
+    db(supabase.from('projects').update({ materials: p.materials }).eq('id', p.id))
+  }
+
+  async function uploadMaterialFile(materialId, file) {
+    const p = selectedProject.value
+    if (!p) return { error: 'No project' }
+    const path = `${p.id}/${materialId}/${Date.now()}-${file.name}`
+    const { error } = await supabase.storage.from('materials').upload(path, file)
+    if (error) return { error }
+    const { data: { publicUrl } } = supabase.storage.from('materials').getPublicUrl(path)
+    const fileEntry = { name: file.name, url: publicUrl, path, size: file.size, type: file.type }
+    const idx = (p.materials || []).findIndex((m) => m.id === materialId)
+    if (idx === -1) return { error: 'Material not found' }
+    p.materials[idx].files = [...(p.materials[idx].files || []), fileEntry]
+    db(supabase.from('projects').update({ materials: p.materials }).eq('id', p.id))
+    return { data: fileEntry }
+  }
+
+  async function deleteMaterialFile(materialId, filePath) {
+    const p = selectedProject.value
+    if (!p) return
+    await supabase.storage.from('materials').remove([filePath])
+    const idx = (p.materials || []).findIndex((m) => m.id === materialId)
+    if (idx === -1) return
+    p.materials[idx].files = (p.materials[idx].files || []).filter((f) => f.path !== filePath)
+    db(supabase.from('projects').update({ materials: p.materials }).eq('id', p.id))
   }
 
   function renameProject(id, name) {
@@ -560,6 +623,12 @@ export const useCardsStore = defineStore('cards', () => {
     deleteProject,
     selectProject,
     updateProjectRules,
+    materials,
+    addMaterial,
+    updateMaterial,
+    deleteMaterial,
+    uploadMaterialFile,
+    deleteMaterialFile,
     addCardType,
     updateCardType,
     deleteCardType,
