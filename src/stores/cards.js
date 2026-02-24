@@ -408,6 +408,25 @@ export const useCardsStore = defineStore('cards', () => {
     }
   }
 
+  function duplicateCardType(id) {
+    if (!selectedProject.value) return null
+    const source = selectedProject.value.cardTypes.find((t) => t.id === id)
+    if (!source) return null
+
+    const newId = uid()
+    const copy = {
+      ...JSON.parse(JSON.stringify(source)), // deep copy (images incluses)
+      id: newId,
+      name: `Copie de ${source.name}`,
+      csvData: [],
+      csvColumns: [],
+    }
+    selectedProject.value.cardTypes.push(copy)
+    db(supabase.from('card_types').insert(cardTypeToDb(copy, selectedProject.value.id)))
+    recordHistory(newId, selectedProject.value.id, 'created', {}, makeSnapshot(copy))
+    return newId
+  }
+
   function deleteCardType(id) {
     if (!selectedProject.value) return
     const ct = selectedProject.value.cardTypes.find((t) => t.id === id)
@@ -631,6 +650,7 @@ export const useCardsStore = defineStore('cards', () => {
     deleteMaterialFile,
     addCardType,
     updateCardType,
+    duplicateCardType,
     deleteCardType,
     selectCardType,
     setCsvData,

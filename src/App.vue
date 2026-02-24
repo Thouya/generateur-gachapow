@@ -117,6 +117,7 @@
                         <span class="truncate">{{ ct.name }}</span>
                       </div>
                       <div class="flex gap-0.5 opacity-0 group-hover/ct:opacity-100 shrink-0">
+                        <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-copy" title="Dupliquer" @click.stop="duplicateCardType(ct.id)" />
                         <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-history" @click.stop="openHistory(ct)" />
                         <UButton size="xs" variant="ghost" color="error" icon="i-lucide-trash-2" @click.stop="store.deleteCardType(ct.id)" />
                       </div>
@@ -409,6 +410,15 @@ function goToCardType(id) {
   store.selectCardType(id)
   currentView.value = 'cardtype'
   currentTab.value = 'options'
+}
+
+function duplicateCardType(id) {
+  const newId = store.duplicateCardType(id)
+  if (newId) {
+    store.selectCardType(newId)
+    currentView.value = 'cardtype'
+    currentTab.value = 'options'
+  }
 }
 
 function createNewCardType() {

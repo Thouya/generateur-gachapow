@@ -136,14 +136,16 @@
                   @dblclick="startEdit(row._index, col)"
                 >
                   <!-- Edit mode -->
-                  <input
+                  <textarea
                     v-if="editingCell?.row === row._index && editingCell?.col === col"
                     :value="store.csvData[row._index][col] ?? ''"
-                    :ref="el => el && el.focus()"
-                    class="w-full bg-[var(--ui-bg)] text-sm px-1 py-0.5 outline-none border border-[var(--ui-primary)] rounded-[var(--ui-radius)] min-w-[60px]"
-                    @input="e => handleEditInput(row._index, col, e.target.value)"
+                    :ref="el => { if (el) { el.focus(); autoResize(el) } }"
+                    class="w-full bg-[var(--ui-bg)] text-sm px-1 py-0.5 outline-none border border-[var(--ui-primary)] rounded-[var(--ui-radius)] min-w-[120px] resize-none overflow-hidden leading-snug"
+                    rows="1"
+                    @input="e => { handleEditInput(row._index, col, e.target.value); autoResize(e.target) }"
                     @blur="saveEdit"
-                    @keydown.enter="saveEdit"
+                    @keydown.ctrl.enter="saveEdit"
+                    @keydown.meta.enter="saveEdit"
                     @keydown.escape="cancelEdit"
                   />
                   <!-- Display mode -->
@@ -155,7 +157,7 @@
                     />
                     <span
                       v-else
-                      class="block max-w-[200px] truncate cursor-text text-sm"
+                      class="block max-w-[200px] cursor-text text-sm whitespace-pre-wrap break-words line-clamp-3"
                       :title="String(row[col] ?? '')"
                     >{{ row[col] ?? '' }}</span>
                   </template>
@@ -201,7 +203,7 @@
             <template v-if="filteredData.length !== store.csvData.length">
               sur {{ store.csvData.length }}
             </template>
-            · Double-clic pour modifier
+            · Double-clic pour modifier · Entrée = saut de ligne · Ctrl+Entrée pour valider
           </span>
           <div v-if="totalPages > 1" class="flex items-center gap-1">
             <UButton
@@ -437,6 +439,11 @@ function selectRow(index) {
 }
 
 // ── Édition de cellule ───────────────────────────────
+function autoResize(el) {
+  el.style.height = 'auto'
+  el.style.height = el.scrollHeight + 'px'
+}
+
 function startEdit(rowIndex, col) {
   editingCell.value = { row: rowIndex, col }
   editOldValue.value = store.csvData[rowIndex]?.[col] ?? ''
