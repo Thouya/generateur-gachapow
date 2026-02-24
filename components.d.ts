@@ -24,6 +24,7 @@ declare module 'vue' {
     ProjectManager: typeof import('./src/components/ProjectManager.vue')['default']
     ProjectMaterials: typeof import('./src/components/ProjectMaterials.vue')['default']
     ProjectRules: typeof import('./src/components/ProjectRules.vue')['default']
+    QuestionnaireBuilder: typeof import('./src/components/QuestionnaireBuilder.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     UAlert: typeof import('./node_modules/@nuxt/ui/dist/runtime/components/Alert.vue')['default']

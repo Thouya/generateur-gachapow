@@ -6,7 +6,9 @@
       "Bash(npm run build:*)",
       "Bash(dir:*)",
       "Bash(node -e:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
