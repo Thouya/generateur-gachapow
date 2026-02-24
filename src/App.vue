@@ -46,42 +46,12 @@
                 />
               </button>
 
-              <!-- Types de cartes du projet sélectionné -->
-              <div v-if="store.selectedProjectId === project.id" class="ml-4 mt-0.5 flex flex-col gap-0.5">
-                <button
-                  v-for="ct in store.cardTypes"
-                  :key="ct.id"
-                  class="flex items-center justify-between gap-2 px-3 py-1.5 rounded-[var(--ui-radius)] text-left text-sm transition-colors group/ct w-full"
-                  :class="store.selectedCardTypeId === ct.id && currentView === 'cardtype'
-                    ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-medium'
-                    : 'text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-text)]'"
-                  @click="goToCardType(ct.id)"
-                >
-                  <div class="flex items-center gap-2 min-w-0">
-                    <UIcon name="i-lucide-layout-template" class="shrink-0 text-xs" />
-                    <span class="truncate">{{ ct.name }}</span>
-                  </div>
-                  <div class="flex gap-0.5 opacity-0 group-hover/ct:opacity-100 shrink-0">
-                    <UButton
-                      size="xs"
-                      variant="ghost"
-                      color="neutral"
-                      icon="i-lucide-history"
-                      @click.stop="openHistory(ct)"
-                    />
-                    <UButton
-                      size="xs"
-                      variant="ghost"
-                      color="error"
-                      icon="i-lucide-trash-2"
-                      @click.stop="store.deleteCardType(ct.id)"
-                    />
-                  </div>
-                </button>
+              <!-- Sous-pages du projet sélectionné -->
+              <div v-if="store.selectedProjectId === project.id" class="ml-3 mt-0.5 flex flex-col gap-0.5">
 
-                <!-- Règles du projet -->
+                <!-- Règles -->
                 <button
-                  class="flex items-center gap-2 px-3 py-1.5 rounded-[var(--ui-radius)] text-left text-sm transition-colors w-full"
+                  class="flex items-center gap-2 px-2 py-1.5 rounded-[var(--ui-radius)] text-left text-sm transition-colors w-full"
                   :class="currentView === 'rules'
                     ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-medium'
                     : 'text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-text)]'"
@@ -91,9 +61,9 @@
                   <span>Règles</span>
                 </button>
 
-                <!-- Matériel du projet -->
+                <!-- Matériel -->
                 <button
-                  class="flex items-center gap-2 px-3 py-1.5 rounded-[var(--ui-radius)] text-left text-sm transition-colors w-full"
+                  class="flex items-center gap-2 px-2 py-1.5 rounded-[var(--ui-radius)] text-left text-sm transition-colors w-full"
                   :class="currentView === 'materials'
                     ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-medium'
                     : 'text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-text)]'"
@@ -103,14 +73,54 @@
                   <span>Matériel</span>
                 </button>
 
-                <!-- Ajouter un type de carte -->
-                <button
-                  class="flex items-center gap-2 px-3 py-1.5 rounded-[var(--ui-radius)] text-left text-sm text-[var(--ui-text-dimmed)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-primary)] transition-colors w-full"
-                  @click="createNewCardType"
-                >
-                  <UIcon name="i-lucide-plus" class="shrink-0 text-xs" />
-                  <span>Ajouter un type</span>
-                </button>
+                <!-- Section Cartes (collapsible) -->
+                <div>
+                  <button
+                    class="flex items-center gap-2 px-2 py-1.5 rounded-[var(--ui-radius)] text-left text-sm transition-colors w-full text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-text)]"
+                    @click="cardsExpanded = !cardsExpanded"
+                  >
+                    <UIcon
+                      name="i-lucide-chevron-right"
+                      class="shrink-0 text-xs transition-transform duration-150"
+                      :class="cardsExpanded ? 'rotate-90' : ''"
+                    />
+                    <UIcon name="i-lucide-layers" class="shrink-0 text-xs" />
+                    <span class="font-medium">Cartes</span>
+                    <span v-if="store.cardTypes.length" class="ml-auto text-xs text-[var(--ui-text-dimmed)]">{{ store.cardTypes.length }}</span>
+                  </button>
+
+                  <!-- Types de cartes -->
+                  <div v-if="cardsExpanded" class="ml-3 mt-0.5 flex flex-col gap-0.5">
+                    <button
+                      v-for="ct in store.cardTypes"
+                      :key="ct.id"
+                      class="flex items-center justify-between gap-2 px-2 py-1.5 rounded-[var(--ui-radius)] text-left text-sm transition-colors group/ct w-full"
+                      :class="store.selectedCardTypeId === ct.id && currentView === 'cardtype'
+                        ? 'bg-[var(--ui-primary)]/10 text-[var(--ui-primary)] font-medium'
+                        : 'text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-text)]'"
+                      @click="goToCardType(ct.id)"
+                    >
+                      <div class="flex items-center gap-2 min-w-0">
+                        <UIcon name="i-lucide-layout-template" class="shrink-0 text-xs" />
+                        <span class="truncate">{{ ct.name }}</span>
+                      </div>
+                      <div class="flex gap-0.5 opacity-0 group-hover/ct:opacity-100 shrink-0">
+                        <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-history" @click.stop="openHistory(ct)" />
+                        <UButton size="xs" variant="ghost" color="error" icon="i-lucide-trash-2" @click.stop="store.deleteCardType(ct.id)" />
+                      </div>
+                    </button>
+
+                    <!-- Ajouter un type -->
+                    <button
+                      class="flex items-center gap-2 px-2 py-1.5 rounded-[var(--ui-radius)] text-left text-sm text-[var(--ui-text-dimmed)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-primary)] transition-colors w-full"
+                      @click="createNewCardType"
+                    >
+                      <UIcon name="i-lucide-plus" class="shrink-0 text-xs" />
+                      <span>Ajouter un type</span>
+                    </button>
+                  </div>
+                </div>
+
               </div>
             </div>
 
@@ -294,6 +304,7 @@ const historyCardType = ref(null)
 const currentView = ref('newproject')
 const currentTab = ref('options')
 const newProjectName = ref('')
+const cardsExpanded = ref(true)
 
 onMounted(() => {
   initAuth()
