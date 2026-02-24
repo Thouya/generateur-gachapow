@@ -110,16 +110,18 @@
                   Aucune colonne CSV disponible.
                 </div>
                 <div v-else class="space-y-2.5">
-                  <div v-for="col in visibleColumns" :key="col" class="flex items-center gap-2 sm:gap-3">
+                  <div v-for="col in visibleColumns" :key="col" class="flex items-start gap-2 sm:gap-3">
                     <label
-                      class="text-sm text-[var(--ui-text-muted)] shrink-0 text-right capitalize hidden sm:block"
+                      class="text-sm text-[var(--ui-text-muted)] shrink-0 text-right capitalize hidden sm:block pt-1.5"
                       style="width: 110px"
                     >{{ col }}</label>
-                    <UInput
+                    <textarea
                       v-model="localData[col]"
-                      size="sm"
-                      class="flex-1"
+                      :ref="el => el && autoResizeTA(el)"
+                      rows="1"
+                      class="card-edit-field flex-1 resize-none overflow-hidden rounded-[var(--ui-radius)] border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-2.5 py-1.5 text-sm text-[var(--ui-text)] placeholder:text-[var(--ui-text-dimmed)] focus:border-[var(--ui-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ui-primary)] transition-colors leading-snug"
                       :placeholder="col"
+                      @input="e => autoResizeTA(e.target)"
                     />
                   </div>
                 </div>
@@ -153,7 +155,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useCardsStore } from '../stores/cards.js'
 import CardPreview from './CardPreview.vue'
 
@@ -181,10 +183,19 @@ function checkMobile() {
 onMounted(() => { checkMobile(); window.addEventListener('resize', checkMobile) })
 onUnmounted(() => { window.removeEventListener('resize', checkMobile) })
 
+function autoResizeTA(el) {
+  el.style.height = 'auto'
+  el.style.height = el.scrollHeight + 'px'
+}
+
 watch(() => props.card, (card) => {
   if (card) {
     localData.value = { ...card.data }
     activeTab.value = 'data'
+    // Recalculer la hauteur des textareas après rendu
+    nextTick(() => {
+      document.querySelectorAll('.card-edit-field').forEach(autoResizeTA)
+    })
   }
 }, { immediate: true })
 
