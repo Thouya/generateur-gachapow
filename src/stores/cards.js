@@ -384,13 +384,18 @@ export const useCardsStore = defineStore('cards', () => {
   }
 
   // ── Types de cartes ─────────────────────────────────
-  function addCardType(cardType) {
+  async function addCardType(cardType) {
     if (!selectedProject.value) return null
     const id = uid()
     const ct = { id, csvData: [], csvColumns: [], ...cardType }
     selectedProject.value.cardTypes.push(ct)
-    db(supabase.from('card_types').insert(cardTypeToDb(ct, selectedProject.value.id)))
-    recordHistory(id, selectedProject.value.id, 'created', {}, makeSnapshot(ct))
+    // Attendre que le card_type existe en DB avant d'insérer l'historique (FK constraint)
+    const { error } = await supabase.from('card_types').insert(cardTypeToDb(ct, selectedProject.value.id))
+    if (error) {
+      console.error('[Supabase]', error.message)
+    } else {
+      recordHistory(id, selectedProject.value.id, 'created', {}, makeSnapshot(ct))
+    }
     return id
   }
 
@@ -435,7 +440,7 @@ export const useCardsStore = defineStore('cards', () => {
     }
   }
 
-  function duplicateCardType(id) {
+  async function duplicateCardType(id) {
     if (!selectedProject.value) return null
     const source = selectedProject.value.cardTypes.find((t) => t.id === id)
     if (!source) return null
@@ -449,8 +454,13 @@ export const useCardsStore = defineStore('cards', () => {
       csvColumns: [],
     }
     selectedProject.value.cardTypes.push(copy)
-    db(supabase.from('card_types').insert(cardTypeToDb(copy, selectedProject.value.id)))
-    recordHistory(newId, selectedProject.value.id, 'created', {}, makeSnapshot(copy))
+    // Attendre que le card_type existe en DB avant d'insérer l'historique (FK constraint)
+    const { error } = await supabase.from('card_types').insert(cardTypeToDb(copy, selectedProject.value.id))
+    if (error) {
+      console.error('[Supabase]', error.message)
+    } else {
+      recordHistory(newId, selectedProject.value.id, 'created', {}, makeSnapshot(copy))
+    }
     return newId
   }
 
