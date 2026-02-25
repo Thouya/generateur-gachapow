@@ -17,6 +17,7 @@ declare module 'vue' {
     CardPreview: typeof import('./src/components/CardPreview.vue')['default']
     CardTypeEditor: typeof import('./src/components/CardTypeEditor.vue')['default']
     CardTypeHistory: typeof import('./src/components/CardTypeHistory.vue')['default']
+    ConfirmDialog: typeof import('./src/components/ConfirmDialog.vue')['default']
     CsvUploader: typeof import('./src/components/CsvUploader.vue')['default']
     DataWorkbench: typeof import('./src/components/DataWorkbench.vue')['default']
     FieldMapper: typeof import('./src/components/FieldMapper.vue')['default']

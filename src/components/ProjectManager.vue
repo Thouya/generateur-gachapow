@@ -94,8 +94,10 @@
 <script setup>
 import { ref } from 'vue'
 import { useCardsStore } from '../stores/cards.js'
+import { useConfirm } from '../composables/useConfirm.js'
 
 const store = useCardsStore()
+const { confirm } = useConfirm()
 
 const newProjectName = ref('')
 const renamingId = ref(null)
@@ -121,9 +123,9 @@ function confirmRename() {
   renamingId.value = null
 }
 
-function confirmDelete(project) {
-  if (window.confirm(`Supprimer le projet "${project.name}" et toutes ses données ?`)) {
-    store.deleteProject(project.id)
-  }
+async function confirmDelete(project) {
+  const ok = await confirm({ title: `Supprimer « ${project.name} » ?`, message: 'Tous les types de cartes, données CSV et cartes générées seront définitivement supprimés.' })
+  if (!ok) return
+  store.deleteProject(project.id)
 }
 </script>

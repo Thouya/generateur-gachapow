@@ -333,9 +333,11 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useCardsStore } from '../stores/cards.js'
+import { useConfirm } from '../composables/useConfirm.js'
 import CardPreview from './CardPreview.vue'
 
 const store = useCardsStore()
+const { confirm } = useConfirm()
 
 // ── State ────────────────────────────────────────────
 const searchQuery = ref('')
@@ -503,8 +505,9 @@ function addRow() {
   currentPage.value = Math.ceil(store.csvData.length / PAGE_SIZE)
 }
 
-function deleteRow(rowIndex) {
-  if (!window.confirm(`Supprimer la ligne ${rowIndex + 1} ?`)) return
+async function deleteRow(rowIndex) {
+  const ok = await confirm({ title: `Supprimer la ligne ${rowIndex + 1} ?`, confirmLabel: 'Supprimer' })
+  if (!ok) return
   store.deleteCsvRow(rowIndex)
   if (selectedRowIndex.value >= store.csvData.length) {
     selectedRowIndex.value = Math.max(0, store.csvData.length - 1)

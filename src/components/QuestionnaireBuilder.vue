@@ -528,9 +528,11 @@
 import { ref, computed } from 'vue'
 import { useSurveyStore } from '../stores/survey.js'
 import { useCardsStore } from '../stores/cards.js'
+import { useConfirm } from '../composables/useConfirm.js'
 
 const surveyStore = useSurveyStore()
 const cardsStore = useCardsStore()
+const { confirm } = useConfirm()
 
 // ── Types de questions ───────────────────────────────
 const QUESTION_TYPES = [
@@ -603,8 +605,9 @@ async function createQ() {
   openEditor(id)
 }
 
-function deleteQ(id) {
-  if (!window.confirm('Supprimer ce questionnaire et toutes ses réponses ?')) return
+async function deleteQ(id) {
+  const ok = await confirm({ title: 'Supprimer ce questionnaire ?', message: 'Toutes les réponses associées seront définitivement supprimées.' })
+  if (!ok) return
   if (selectedQId.value === id) selectedQId.value = null
   surveyStore.deleteQuestionnaire(id)
 }
@@ -690,9 +693,12 @@ function addQuestion() {
   saveQuestions()
 }
 
-function removeQuestion(idx) {
+async function removeQuestion(idx) {
   if (!editQ.value) return
-  if (expandedQId.value === editQ.value.questions[idx]?.id) expandedQId.value = null
+  const q = editQ.value.questions[idx]
+  const ok = await confirm({ title: 'Supprimer cette question ?', message: q?.label ? `« ${q.label} »` : '' })
+  if (!ok) return
+  if (expandedQId.value === q?.id) expandedQId.value = null
   editQ.value.questions.splice(idx, 1)
   saveQuestions()
 }

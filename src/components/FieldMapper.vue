@@ -143,6 +143,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useConfirm } from '../composables/useConfirm.js'
 
 const props = defineProps({
   fields: { type: Array, required: true },
@@ -188,6 +189,8 @@ const verticalAlignOptions = [
   { label: 'Milieu', value: 'middle' },
   { label: 'Bas', value: 'bottom' },
 ]
+
+const { confirm } = useConfirm()
 
 const cardRef = ref(null)
 const selectedFieldIndex = ref(null)
@@ -261,7 +264,10 @@ function addField() {
   selectedFieldIndex.value = updated.length - 1
 }
 
-function removeField(index) {
+async function removeField(index) {
+  const field = props.fields[index]
+  const ok = await confirm({ title: 'Supprimer cette zone de contenu ?', message: field?.label || field?.key || '' })
+  if (!ok) return
   const updated = props.fields.filter((_, i) => i !== index)
   emit('update:fields', updated)
   selectedFieldIndex.value = null

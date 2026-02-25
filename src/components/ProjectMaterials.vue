@@ -260,8 +260,10 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useCardsStore } from '../stores/cards.js'
+import { useConfirm } from '../composables/useConfirm.js'
 
 const store = useCardsStore()
+const { confirm } = useConfirm()
 
 // ── Liste ──────────────────────────────────────────
 const search = ref('')
@@ -285,7 +287,8 @@ async function handleAdd() {
 }
 
 async function handleDelete(item) {
-  if (!confirm(`Supprimer « ${item.name || 'Sans nom'} » ?`)) return
+  const ok = await confirm({ title: `Supprimer « ${item.name || 'Sans nom'} » ?`, message: item.files?.length ? `${item.files.length} fichier(s) joint(s) seront également supprimés.` : '' })
+  if (!ok) return
   store.deleteMaterial(item.id)
 }
 
@@ -380,6 +383,9 @@ function handleDrop(e) {
 
 async function handleDeleteFile(filePath) {
   if (!editingItem.value) return
+  const file = editingItem.value.files?.find((f) => f.path === filePath)
+  const ok = await confirm({ title: 'Supprimer ce fichier ?', message: file?.name ?? filePath })
+  if (!ok) return
   deletingFile.value = filePath
   await store.deleteMaterialFile(editingItem.value.id, filePath)
   deletingFile.value = null

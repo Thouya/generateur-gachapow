@@ -119,7 +119,7 @@
                       <div class="flex gap-0.5 opacity-0 group-hover/ct:opacity-100 shrink-0">
                         <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-copy" title="Dupliquer" @click.stop="duplicateCardType(ct.id)" />
                         <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-history" @click.stop="openHistory(ct)" />
-                        <UButton size="xs" variant="ghost" color="error" icon="i-lucide-trash-2" @click.stop="store.deleteCardType(ct.id)" />
+                        <UButton size="xs" variant="ghost" color="error" icon="i-lucide-trash-2" @click.stop="deleteCardType(ct.id)" />
                       </div>
                     </button>
 
@@ -296,14 +296,19 @@
         @close="historyOpen = false"
       />
     </UDashboardGroup>
+
+    <!-- Dialogue de confirmation global -->
+    <ConfirmDialog />
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAuth } from './composables/useAuth.js'
+import { useConfirm } from './composables/useConfirm.js'
 import { useCardsStore } from './stores/cards.js'
 import { useSurveyStore } from './stores/survey.js'
 import AuthGate from './components/AuthGate.vue'
+import ConfirmDialog from './components/ConfirmDialog.vue'
 import CardTypeEditor from './components/CardTypeEditor.vue'
 import CsvUploader from './components/CsvUploader.vue'
 import DataWorkbench from './components/DataWorkbench.vue'
@@ -314,6 +319,7 @@ import ProjectMaterials from './components/ProjectMaterials.vue'
 import QuestionnaireBuilder from './components/QuestionnaireBuilder.vue'
 
 const { user: authUser, loading: authLoading, init: initAuth, signOut } = useAuth()
+const { confirm } = useConfirm()
 const store = useCardsStore()
 const surveyStore = useSurveyStore()
 
@@ -391,8 +397,9 @@ function selectProject(id) {
   }
 }
 
-function deleteProject(id) {
-  if (!window.confirm('Supprimer ce projet et toutes ses données ?')) return
+async function deleteProject(id) {
+  const ok = await confirm({ title: 'Supprimer ce projet ?', message: 'Tous les types de cartes, données CSV et cartes générées seront définitivement supprimés.' })
+  if (!ok) return
   store.deleteProject(id)
   currentView.value = store.projects.length > 0 ? (store.selectedCardType ? 'cardtype' : 'newproject') : 'newproject'
 }
@@ -410,6 +417,16 @@ function goToCardType(id) {
   store.selectCardType(id)
   currentView.value = 'cardtype'
   currentTab.value = 'options'
+}
+
+async function deleteCardType(id) {
+  const ct = store.cardTypes.find((t) => t.id === id)
+  const ok = await confirm({ title: 'Supprimer ce type de carte ?', message: ct ? `« ${ct.name} » et toutes les cartes générées associées seront définitivement supprimés.` : '' })
+  if (!ok) return
+  store.deleteCardType(id)
+  if (store.selectedCardTypeId === id || !store.selectedCardType) {
+    currentView.value = store.selectedCardType ? 'cardtype' : 'newproject'
+  }
 }
 
 function duplicateCardType(id) {
@@ -457,10 +474,10 @@ function handleLogout() {
   currentView.value = 'newproject'
 }
 
-function confirmReset() {
-  if (window.confirm('Supprimer tous les projets, types de cartes, données CSV et cartes générées ?')) {
-    store.resetAll()
-    currentView.value = 'newproject'
-  }
+async function confirmReset() {
+  const ok = await confirm({ title: 'Tout réinitialiser ?', message: 'Tous les projets, types de cartes, données CSV et cartes générées seront définitivement supprimés.', confirmLabel: 'Réinitialiser' })
+  if (!ok) return
+  store.resetAll()
+  currentView.value = 'newproject'
 }
 </script>

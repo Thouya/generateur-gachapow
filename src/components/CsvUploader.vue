@@ -73,7 +73,7 @@
           … et {{ store.csvData.length - 5 }} autres lignes
         </p>
 
-        <UButton variant="soft" color="error" size="sm" icon="i-lucide-trash-2" @click="store.clearCsvData()">
+        <UButton variant="soft" color="error" size="sm" icon="i-lucide-trash-2" @click="clearData">
           Supprimer les données
         </UButton>
       </div>
@@ -84,10 +84,18 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useCardsStore } from '../stores/cards.js'
+import { useConfirm } from '../composables/useConfirm.js'
 import { parseCsvFile } from '../utils/csv.js'
 
 const store = useCardsStore()
+const { confirm } = useConfirm()
 const fileInput = ref(null)
+
+async function clearData() {
+  const ok = await confirm({ title: 'Supprimer les données CSV ?', message: `Les ${store.csvData.length} lignes seront définitivement supprimées.` })
+  if (!ok) return
+  store.clearCsvData()
+}
 
 const previewRows = computed(() => store.csvData.slice(0, 5))
 
