@@ -357,7 +357,7 @@ const illEditorImgStyle = computed(() => {
     left: '50%',
     width: '100%',
     height: '100%',
-    objectFit: 'cover',
+    objectFit: 'contain',
     zIndex: 2,
     transform: `translate(calc(-50% + ${(pos.offsetX ?? 0) * ps}px), calc(-50% + ${(pos.offsetY ?? 0) * ps}px)) scale(${pos.scale ?? 1})`,
   }

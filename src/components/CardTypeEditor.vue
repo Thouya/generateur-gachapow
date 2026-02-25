@@ -287,7 +287,7 @@ const illustrationEditorStyle = computed(() => {
     left: '50%',
     width: '100%',
     height: '100%',
-    objectFit: 'cover',
+    objectFit: 'contain',
     zIndex: 2,
     transform: `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${s})`,
   }

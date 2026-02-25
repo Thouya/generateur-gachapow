@@ -68,7 +68,6 @@ const illustrationTransformStyle = computed(() => {
   const offsetY = pos.offsetY ?? 0
   const scale = pos.scale ?? 1
   return {
-    objectFit: 'cover',
     top: '50%',
     left: '50%',
     transform: `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${scale})`,
