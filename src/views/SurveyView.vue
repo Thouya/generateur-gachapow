@@ -184,32 +184,45 @@
                 <div
                   v-for="card in cardsForType(q.cardTypeId)"
                   :key="card.id"
-                  class="cursor-pointer transition-all"
-                  :class="isCardSelected(q, card.id) ? 'ring-2 ring-[var(--ui-primary)] ring-offset-2 rounded-[12px]' : 'opacity-80 hover:opacity-100'"
-                  @click="toggleCard(q, card.id)"
+                  class="flex flex-col gap-2"
+                  :style="{ width: Math.round((cardTypeMap[q.cardTypeId].width || 300) * cardScale) + 'px' }"
                 >
                   <!-- Carte à l'échelle réduite -->
                   <div
-                    :style="{
-                      width: Math.round((cardTypeMap[q.cardTypeId].width || 300) * cardScale) + 'px',
-                      height: Math.round((cardTypeMap[q.cardTypeId].height || 420) * cardScale) + 'px',
-                      overflow: 'hidden',
-                      position: 'relative',
-                      borderRadius: '12px',
-                    }"
+                    class="cursor-pointer transition-all"
+                    :class="isCardSelected(q, card.id) ? 'ring-2 ring-[var(--ui-primary)] ring-offset-2 rounded-[12px]' : 'opacity-80 hover:opacity-100'"
+                    @click="toggleCard(q, card.id)"
                   >
                     <div
                       :style="{
-                        transform: `scale(${cardScale})`,
-                        transformOrigin: 'top left',
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
+                        width: Math.round((cardTypeMap[q.cardTypeId].width || 300) * cardScale) + 'px',
+                        height: Math.round((cardTypeMap[q.cardTypeId].height || 420) * cardScale) + 'px',
+                        overflow: 'hidden',
+                        position: 'relative',
+                        borderRadius: '12px',
                       }"
                     >
-                      <CardPreview :card-type="cardTypeMap[q.cardTypeId]" :card-data="card.data" />
+                      <div
+                        :style="{
+                          transform: `scale(${cardScale})`,
+                          transformOrigin: 'top left',
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                        }"
+                      >
+                        <CardPreview :card-type="cardTypeMap[q.cardTypeId]" :card-data="card.data" />
+                      </div>
                     </div>
                   </div>
+                  <!-- Feedback par carte (si activé et carte sélectionnée) -->
+                  <textarea
+                    v-if="q.withFeedback && isCardSelected(q, card.id)"
+                    v-model="answers[q.id + '_feedback'][card.id]"
+                    rows="2"
+                    class="w-full text-xs border border-[var(--ui-primary)]/40 rounded-[var(--ui-radius)] px-2 py-1.5 bg-[var(--ui-bg-elevated)] text-[var(--ui-text)] placeholder-[var(--ui-text-dimmed)] focus:outline-none focus:ring-1 focus:ring-[var(--ui-primary)] resize-none"
+                    placeholder="Votre retour sur cette carte…"
+                  />
                 </div>
               </div>
             </div>
@@ -220,34 +233,46 @@
             <p v-if="!q.materialsSnapshot?.length" class="text-sm text-[var(--ui-text-dimmed)] italic">
               Aucun matériel disponible.
             </p>
-            <label
+            <div
               v-for="mat in (q.materialsSnapshot ?? [])"
               :key="mat.id"
-              class="flex items-center gap-3 p-3 rounded-[var(--ui-radius)] border cursor-pointer transition-colors"
-              :class="isMaterialSelected(q, mat.name)
-                ? 'border-[var(--ui-primary)] bg-[var(--ui-primary)]/5'
-                : 'border-[var(--ui-border)] hover:bg-[var(--ui-bg-elevated)]'"
+              class="space-y-1.5"
             >
-              <input
-                v-if="q.multiple"
-                type="checkbox"
-                :checked="isMaterialSelected(q, mat.name)"
-                class="rounded accent-[var(--ui-primary)]"
-                @change="toggleMaterial(q.id, mat.name)"
+              <label
+                class="flex items-center gap-3 p-3 rounded-[var(--ui-radius)] border cursor-pointer transition-colors"
+                :class="isMaterialSelected(q, mat.name)
+                  ? 'border-[var(--ui-primary)] bg-[var(--ui-primary)]/5'
+                  : 'border-[var(--ui-border)] hover:bg-[var(--ui-bg-elevated)]'"
+              >
+                <input
+                  v-if="q.multiple"
+                  type="checkbox"
+                  :checked="isMaterialSelected(q, mat.name)"
+                  class="rounded accent-[var(--ui-primary)]"
+                  @change="toggleMaterial(q.id, mat.name)"
+                />
+                <input
+                  v-else
+                  type="radio"
+                  :name="`qmat_${q.id}`"
+                  :value="mat.name"
+                  v-model="answers[q.id]"
+                  class="accent-[var(--ui-primary)]"
+                />
+                <div class="flex-1 min-w-0">
+                  <span class="text-sm font-medium">{{ mat.name }}</span>
+                  <span class="text-xs text-[var(--ui-text-dimmed)] ml-2">×{{ mat.quantity }}</span>
+                </div>
+              </label>
+              <!-- Feedback par élément matériel (si activé et élément sélectionné) -->
+              <textarea
+                v-if="q.withFeedback && isMaterialSelected(q, mat.name)"
+                v-model="answers[q.id + '_feedback'][mat.name]"
+                rows="2"
+                class="w-full text-xs border border-[var(--ui-primary)]/40 rounded-[var(--ui-radius)] px-3 py-1.5 bg-[var(--ui-bg-elevated)] text-[var(--ui-text)] placeholder-[var(--ui-text-dimmed)] focus:outline-none focus:ring-1 focus:ring-[var(--ui-primary)] resize-none"
+                :placeholder="`Votre retour sur « ${mat.name} »…`"
               />
-              <input
-                v-else
-                type="radio"
-                :name="`qmat_${q.id}`"
-                :value="mat.name"
-                v-model="answers[q.id]"
-                class="accent-[var(--ui-primary)]"
-              />
-              <div class="flex-1 min-w-0">
-                <span class="text-sm font-medium">{{ mat.name }}</span>
-                <span class="text-xs text-[var(--ui-text-dimmed)] ml-2">×{{ mat.quantity }}</span>
-              </div>
-            </label>
+            </div>
           </div>
         </div>
       </div>
@@ -340,6 +365,10 @@ onMounted(async () => {
       answers[q.id] = []
     } else {
       answers[q.id] = undefined
+    }
+    // Feedback textuel par élément (cartes ou matériel)
+    if ((q.type === 'project_cards' || q.type === 'project_materials') && q.withFeedback) {
+      answers[q.id + '_feedback'] = {}
     }
   })
 

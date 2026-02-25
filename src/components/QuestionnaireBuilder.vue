@@ -316,6 +316,10 @@
                 <input type="checkbox" v-model="q.multiple" class="rounded accent-[var(--ui-primary)]" @change="saveQuestions" />
                 <span class="text-[var(--ui-text-muted)]">Sélection multiple</span>
               </label>
+              <label class="flex items-center gap-1.5 cursor-pointer text-sm">
+                <input type="checkbox" v-model="q.withFeedback" class="rounded accent-[var(--ui-primary)]" @change="saveQuestions" />
+                <span class="text-[var(--ui-text-muted)]">Retour libre par carte sélectionnée</span>
+              </label>
             </div>
 
             <!-- ── Matériel du projet ── -->
@@ -323,6 +327,10 @@
               <label class="flex items-center gap-1.5 cursor-pointer text-sm">
                 <input type="checkbox" v-model="q.multiple" class="rounded accent-[var(--ui-primary)]" @change="saveQuestions" />
                 <span class="text-[var(--ui-text-muted)]">Sélection multiple</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer text-sm">
+                <input type="checkbox" v-model="q.withFeedback" class="rounded accent-[var(--ui-primary)]" @change="saveQuestions" />
+                <span class="text-[var(--ui-text-muted)]">Retour libre par élément sélectionné</span>
               </label>
               <div class="flex items-center gap-2 text-xs text-[var(--ui-text-dimmed)]">
                 <span>{{ q.materialsSnapshot?.length ?? 0 }} élément(s) capturé(s)</span>
@@ -493,29 +501,56 @@
           </div>
 
           <!-- Cards stats -->
-          <div v-else-if="q.type === 'project_cards'" class="space-y-2">
-            <div
-              v-for="[cardId, count] in topCards(q.id)"
-              :key="cardId"
-              class="flex items-center gap-2"
-            >
-              <span class="text-sm flex-1 text-[var(--ui-text-muted)]">{{ cardId }}</span>
-              <span class="text-sm font-medium text-[var(--ui-primary)]">{{ count }}×</span>
-            </div>
+          <div v-else-if="q.type === 'project_cards'" class="space-y-3">
             <p v-if="!topCards(q.id).length" class="text-sm text-[var(--ui-text-dimmed)]">
               Aucune réponse
             </p>
+            <div
+              v-for="[cardId, count] in topCards(q.id)"
+              :key="cardId"
+              class="space-y-1"
+            >
+              <div class="flex items-center gap-2">
+                <span class="text-sm flex-1 text-[var(--ui-text-muted)] font-mono text-xs truncate">{{ cardId }}</span>
+                <span class="text-sm font-medium text-[var(--ui-primary)]">{{ count }}×</span>
+              </div>
+              <!-- Verbatims feedback par carte -->
+              <div v-if="q.withFeedback" class="pl-3 space-y-1">
+                <div
+                  v-for="(fb, i) in cardFeedbacks(q.id, cardId)"
+                  :key="i"
+                  class="text-xs italic text-[var(--ui-text-muted)] bg-[var(--ui-bg-elevated)] rounded px-2 py-1"
+                >
+                  « {{ fb }} »
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Materials stats -->
-          <div v-else-if="q.type === 'project_materials'" class="space-y-2">
+          <div v-else-if="q.type === 'project_materials'" class="space-y-3">
+            <p v-if="!topMaterials(q.id).length" class="text-sm text-[var(--ui-text-dimmed)]">
+              Aucune réponse
+            </p>
             <div
               v-for="[name, count] in topMaterials(q.id)"
               :key="name"
-              class="flex items-center gap-2"
+              class="space-y-1"
             >
-              <span class="text-sm flex-1">{{ name }}</span>
-              <span class="text-sm font-medium text-[var(--ui-primary)]">{{ count }}×</span>
+              <div class="flex items-center gap-2">
+                <span class="text-sm flex-1">{{ name }}</span>
+                <span class="text-sm font-medium text-[var(--ui-primary)]">{{ count }}×</span>
+              </div>
+              <!-- Verbatims feedback par matériel -->
+              <div v-if="q.withFeedback" class="pl-3 space-y-1">
+                <div
+                  v-for="(fb, i) in materialFeedbacks(q.id, name)"
+                  :key="i"
+                  class="text-xs italic text-[var(--ui-text-muted)] bg-[var(--ui-bg-elevated)] rounded px-2 py-1"
+                >
+                  « {{ fb }} »
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -845,6 +880,20 @@ function topMaterials(qId) {
     names.forEach((name) => { map[name] = (map[name] ?? 0) + 1 })
   })
   return Object.entries(map).sort((a, b) => b[1] - a[1])
+}
+
+// Feedback verbatims par carte (clé = qId + '_feedback', valeur = { cardId: 'texte' })
+function cardFeedbacks(qId, cardId) {
+  return surveyStore.responses
+    .map((r) => r.answers[qId + '_feedback']?.[cardId])
+    .filter((v) => typeof v === 'string' && v.trim())
+}
+
+// Feedback verbatims par matériel
+function materialFeedbacks(qId, matName) {
+  return surveyStore.responses
+    .map((r) => r.answers[qId + '_feedback']?.[matName])
+    .filter((v) => typeof v === 'string' && v.trim())
 }
 </script>
 
