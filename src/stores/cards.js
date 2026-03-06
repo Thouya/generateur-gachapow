@@ -527,7 +527,11 @@ export const useCardsStore = defineStore('cards', () => {
       if (gc.cardTypeId !== ct.id) return
       const idx = parseInt(gc.id.split('-').pop())
       if (idx === rowIndex) {
-        gc.data = { ...ct.csvData[rowIndex] }
+        // Préserver les données personnalisées (__illustration, __illustrationPosition)
+        const custom = {}
+        if (gc.data.__illustration) custom.__illustration = gc.data.__illustration
+        if (gc.data.__illustrationPosition) custom.__illustrationPosition = gc.data.__illustrationPosition
+        gc.data = { ...ct.csvData[rowIndex], ...custom }
         db(supabase.from('generated_cards').update({ data: gc.data }).eq('id', gc.id))
       }
     })
@@ -589,11 +593,28 @@ export const useCardsStore = defineStore('cards', () => {
 
     const type = selectedCardType.value
     const projectId = selectedProject.value.id
-    const cards = csvData.value.map((row, index) => ({
-      id: `${type.id}-${index}`,
-      cardTypeId: type.id,
-      data: { ...row },
-    }))
+
+    // Indexer les cartes existantes pour préserver les données personnalisées
+    const existingByIndex = {}
+    selectedProject.value.generatedCards.forEach((c) => {
+      if (c.cardTypeId === type.id) {
+        const idx = parseInt(c.id.split('-').pop())
+        existingByIndex[idx] = c
+      }
+    })
+
+    const cards = csvData.value.map((row, index) => {
+      const data = { ...row }
+      const existing = existingByIndex[index]
+
+      // Préserver l'illustration et la position personnalisées par carte
+      if (existing?.data) {
+        if (existing.data.__illustration) data.__illustration = existing.data.__illustration
+        if (existing.data.__illustrationPosition) data.__illustrationPosition = existing.data.__illustrationPosition
+      }
+
+      return { id: `${type.id}-${index}`, cardTypeId: type.id, data }
+    })
 
     selectedProject.value.generatedCards = [
       ...selectedProject.value.generatedCards.filter((c) => c.cardTypeId !== type.id),
