@@ -116,7 +116,7 @@
                         <UIcon name="i-lucide-layout-template" class="shrink-0 text-xs" />
                         <span class="truncate">{{ ct.name }}</span>
                       </div>
-                      <div class="flex gap-0.5 opacity-0 group-hover/ct:opacity-100 shrink-0">
+                      <div class="hidden group-hover/ct:flex gap-0.5 shrink-0">
                         <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-copy" title="Dupliquer" @click.stop="duplicateCardType(ct.id)" />
                         <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-history" @click.stop="openHistory(ct)" />
                         <UButton size="xs" variant="ghost" color="error" icon="i-lucide-trash-2" @click.stop="deleteCardType(ct.id)" />
@@ -334,8 +334,13 @@ onMounted(() => {
   initAuth()
 })
 
-watch(authUser, (user) => {
-  if (user) store.init()
+watch(authUser, (user, prevUser) => {
+  if (user && !prevUser) {
+    store.init()
+  } else if (!user && prevUser) {
+    // Déconnexion : remettre le flag à zéro pour que le prochain login recharge les données
+    store.resetInitialized()
+  }
 })
 
 // Charger les questionnaires quand le projet change
