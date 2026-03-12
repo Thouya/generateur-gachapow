@@ -15,6 +15,8 @@ function db(promise) {
 }
 
 // ── Conversion DB ↔ App ─────────────────────────────
+
+// Version complète (utilisée quand on charge le détail d'un type)
 function dbToCardType(row) {
   return {
     id: row.id,
@@ -29,6 +31,27 @@ function dbToCardType(row) {
     contentFields: row.content_fields || [],
     csvData: row.csv_data || [],
     csvColumns: row.csv_columns || [],
+    _detailLoaded: true,
+  }
+}
+
+// Version légère pour l'init (sans images ni CSV pour éviter le timeout)
+function dbToCardTypeMeta(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    width: row.width || 300,
+    height: row.height || 420,
+    backgroundImage: '',
+    illustrationImage: '',
+    illustrationColumn: row.illustration_column || '',
+    illustrationPosition: row.illustration_position ?? null,
+    overlayImage: '',
+    contentFields: row.content_fields || [],
+    csvData: [],
+    csvColumns: [],
+    sortOrder: row.sort_order ?? 0,
+    _detailLoaded: false,
   }
 }
 
@@ -47,8 +70,8 @@ function cardTypeToDb(ct, projectId) {
     csv_data: ct.csvData || [],
     csv_columns: ct.csvColumns || [],
   }
-  // Inclure seulement si la valeur est renseignée (la colonne peut ne pas exister encore en DB)
   if (ct.illustrationPosition != null) row.illustration_position = ct.illustrationPosition
+  if (ct.sortOrder != null) row.sort_order = ct.sortOrder
   return row
 }
 
@@ -93,6 +116,9 @@ function computeChanges(oldCt, updates) {
 }
 
 // ── Store ───────────────────────────────────────────
+// Flag module-level : empêche un double init() lors des refreshs de token Supabase
+let storeInitialized = false
+
 export const useCardsStore = defineStore('cards', () => {
   const projects = ref([])
   const selectedProjectId = ref(null)
@@ -120,6 +146,8 @@ export const useCardsStore = defineStore('cards', () => {
 
   // ── Initialisation ──────────────────────────────────
   async function init() {
+    if (storeInitialized) return
+    storeInitialized = true
     loading.value = true
     try {
       const {
@@ -127,11 +155,23 @@ export const useCardsStore = defineStore('cards', () => {
       } = await supabase.auth.getSession()
       userId.value = session?.user?.id || null
 
-      const [{ data: pRows }, { data: ctRows }, { data: gcRows }] = await Promise.all([
+      const [
+        { data: pRows, error: pErr },
+        { data: ctRows, error: ctErr },
+        { data: gcRows, error: gcErr },
+      ] = await Promise.all([
         supabase.from('projects').select('*'),
-        supabase.from('card_types').select('*'),
+        // Exclure les colonnes images/CSV de l'init pour éviter le timeout
+        // (les images base64 peuvent peser plusieurs Mo par ligne)
+        supabase
+          .from('card_types')
+          .select('id, project_id, name, width, height, illustration_column, illustration_position, content_fields, sort_order'),
         supabase.from('generated_cards').select('*'),
       ])
+
+      if (pErr) console.error('[Supabase] projects:', pErr.message, pErr)
+      if (ctErr) console.error('[Supabase] card_types:', ctErr.message, ctErr)
+      if (gcErr) console.error('[Supabase] generated_cards:', gcErr.message, gcErr)
 
       if (pRows && pRows.length > 0) {
         projects.value = pRows.map((p) => ({
@@ -140,7 +180,10 @@ export const useCardsStore = defineStore('cards', () => {
           rules: p.rules || '',
           materials: p.materials || [],
           selectedCardTypeId: p.selected_card_type_id,
-          cardTypes: (ctRows || []).filter((ct) => ct.project_id === p.id).map(dbToCardType),
+          cardTypes: (ctRows || [])
+            .filter((ct) => ct.project_id === p.id)
+            .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+            .map(dbToCardTypeMeta),
           generatedCards: (gcRows || [])
             .filter((c) => c.project_id === p.id)
             .map((c) => ({ id: c.id, cardTypeId: c.card_type_id, data: c.data || {} })),
@@ -151,8 +194,42 @@ export const useCardsStore = defineStore('cards', () => {
 
       selectedProjectId.value =
         localStorage.getItem('gachapow-selected-project') || projects.value[0]?.id || null
+
+      // Précharger les images + CSV du type sélectionné au démarrage (await pour que
+      // CardTypeEditor reçoive les bonnes données dès le premier rendu)
+      const selProject = projects.value.find((p) => p.id === selectedProjectId.value)
+      if (selProject?.selectedCardTypeId) {
+        await loadCardTypeDetail(selProject.selectedCardTypeId)
+      }
     } finally {
       loading.value = false
+    }
+  }
+
+  // Charge les images et données CSV d'un type de carte (colonnes lourdes)
+  async function loadCardTypeDetail(cardTypeId) {
+    const project = projects.value.find((p) => p.cardTypes.some((ct) => ct.id === cardTypeId))
+    if (!project) return
+    const ct = project.cardTypes.find((t) => t.id === cardTypeId)
+    if (!ct || ct._detailLoaded) return
+
+    const { data, error } = await supabase
+      .from('card_types')
+      .select('background_image, illustration_image, overlay_image, csv_data, csv_columns')
+      .eq('id', cardTypeId)
+      .single()
+
+    if (error) {
+      console.error('[Supabase] loadCardTypeDetail:', error.message)
+      return
+    }
+    if (data) {
+      ct.backgroundImage = data.background_image || ''
+      ct.illustrationImage = data.illustration_image || ''
+      ct.overlayImage = data.overlay_image || ''
+      ct.csvData = data.csv_data || []
+      ct.csvColumns = data.csv_columns || []
+      ct._detailLoaded = true
     }
   }
 
@@ -387,7 +464,8 @@ export const useCardsStore = defineStore('cards', () => {
   async function addCardType(cardType) {
     if (!selectedProject.value) return null
     const id = uid()
-    const ct = { id, csvData: [], csvColumns: [], ...cardType }
+    const maxOrder = selectedProject.value.cardTypes.reduce((m, t) => Math.max(m, t.sortOrder ?? 0), 0)
+    const ct = { id, csvData: [], csvColumns: [], sortOrder: maxOrder + 1, ...cardType, _detailLoaded: true }
     selectedProject.value.cardTypes.push(ct)
     // Attendre que le card_type existe en DB avant d'insérer l'historique (FK constraint)
     const { error } = await supabase.from('card_types').insert(cardTypeToDb(ct, selectedProject.value.id))
@@ -446,12 +524,15 @@ export const useCardsStore = defineStore('cards', () => {
     if (!source) return null
 
     const newId = uid()
+    const maxOrder = selectedProject.value.cardTypes.reduce((m, t) => Math.max(m, t.sortOrder ?? 0), 0)
     const copy = {
       ...JSON.parse(JSON.stringify(source)), // deep copy (images incluses)
       id: newId,
       name: `Copie de ${source.name}`,
       csvData: [],
       csvColumns: [],
+      sortOrder: maxOrder + 1,
+      _detailLoaded: true, // les images du source sont déjà en mémoire
     }
     selectedProject.value.cardTypes.push(copy)
     // Attendre que le card_type existe en DB avant d'insérer l'historique (FK constraint)
@@ -481,6 +562,15 @@ export const useCardsStore = defineStore('cards', () => {
     db(supabase.from('card_types').delete().eq('id', id))
   }
 
+  function reorderCardTypes(reordered) {
+    if (!selectedProject.value) return
+    reordered.forEach((ct, i) => { ct.sortOrder = i + 1 })
+    selectedProject.value.cardTypes = reordered
+    for (const ct of reordered) {
+      db(supabase.from('card_types').update({ sort_order: ct.sortOrder }).eq('id', ct.id))
+    }
+  }
+
   function selectCardType(id) {
     if (!selectedProject.value || !id) return
     selectedProject.value.selectedCardTypeId = id
@@ -490,6 +580,7 @@ export const useCardsStore = defineStore('cards', () => {
         .update({ selected_card_type_id: id })
         .eq('id', selectedProject.value.id)
     )
+    loadCardTypeDetail(id)
   }
 
   // ── CSV (au niveau card type) ────────────────────────
@@ -670,6 +761,11 @@ export const useCardsStore = defineStore('cards', () => {
     }
   }
 
+  // Réinitialise le flag pour permettre un nouvel init() après déconnexion
+  function resetInitialized() {
+    storeInitialized = false
+  }
+
   // ── Reset ───────────────────────────────────────────
   async function resetAll() {
     const ids = projects.value.map((p) => p.id)
@@ -695,6 +791,8 @@ export const useCardsStore = defineStore('cards', () => {
     selectedCardTypeId,
     selectedCardType,
     init,
+    resetInitialized,
+    loadCardTypeDetail,
     addProject,
     renameProject,
     deleteProject,
@@ -711,6 +809,7 @@ export const useCardsStore = defineStore('cards', () => {
     updateCardType,
     duplicateCardType,
     deleteCardType,
+    reorderCardTypes,
     selectCardType,
     setCsvData,
     clearCsvData,

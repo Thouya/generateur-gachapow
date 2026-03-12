@@ -251,6 +251,14 @@ watch(
   { immediate: true }
 )
 
+// Re-synchronise le formulaire quand les images/CSV finissent de charger (lazy load)
+watch(
+  () => sourceType.value?._detailLoaded,
+  (loaded) => {
+    if (loaded && sourceType.value) resetForm(sourceType.value)
+  }
+)
+
 // ── Recadrage illustration ───────────────────────────────────────────────────
 // Dimensions de la mini-preview (ratio conservé, max 200px de large)
 const previewW = computed(() => Math.min(form.width || 300, 200))

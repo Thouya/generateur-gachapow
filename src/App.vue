@@ -102,9 +102,17 @@
                   </button>
 
                   <!-- Types de cartes -->
-                  <div v-if="cardsExpanded" class="ml-3 mt-0.5 flex flex-col gap-0.5">
+                  <Draggable
+                    v-if="cardsExpanded"
+                    v-model="sortableCardTypes"
+                    item-key="id"
+                    tag="div"
+                    handle=".ct-drag-handle"
+                    :animation="150"
+                    class="ml-3 mt-0.5 flex flex-col gap-0.5"
+                  >
+                    <template #item="{ element: ct }">
                     <button
-                      v-for="ct in store.cardTypes"
                       :key="ct.id"
                       class="flex items-center justify-between gap-2 px-2 py-1.5 rounded-[var(--ui-radius)] text-left text-sm transition-colors group/ct w-full"
                       :class="store.selectedCardTypeId === ct.id && currentView === 'cardtype'
@@ -113,6 +121,7 @@
                       @click="goToCardType(ct.id)"
                     >
                       <div class="flex items-center gap-2 min-w-0">
+                        <UIcon name="i-lucide-grip-vertical" class="ct-drag-handle shrink-0 text-xs cursor-grab opacity-0 group-hover/ct:opacity-100 text-[var(--ui-text-dimmed)]" />
                         <UIcon name="i-lucide-layout-template" class="shrink-0 text-xs" />
                         <span class="truncate">{{ ct.name }}</span>
                       </div>
@@ -122,8 +131,11 @@
                         <UButton size="xs" variant="ghost" color="error" icon="i-lucide-trash-2" @click.stop="deleteCardType(ct.id)" />
                       </div>
                     </button>
+                    </template>
+                  </Draggable>
 
-                    <!-- Ajouter un type -->
+                  <!-- Ajouter un type -->
+                  <div v-if="cardsExpanded" class="ml-3 mt-0.5">
                     <button
                       class="flex items-center gap-2 px-2 py-1.5 rounded-[var(--ui-radius)] text-left text-sm text-[var(--ui-text-dimmed)] hover:bg-[var(--ui-bg-elevated)] hover:text-[var(--ui-primary)] transition-colors w-full"
                       @click="createNewCardType"
@@ -303,6 +315,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import Draggable from 'vuedraggable'
 import { useAuth } from './composables/useAuth.js'
 import { useConfirm } from './composables/useConfirm.js'
 import { useCardsStore } from './stores/cards.js'
@@ -360,6 +373,11 @@ watch(() => store.projects.length, (len) => {
 const cardsForType = computed(() =>
   store.generatedCards.filter((c) => c.cardTypeId === store.selectedCardTypeId)
 )
+
+const sortableCardTypes = computed({
+  get: () => [...store.cardTypes],
+  set: (newOrder) => store.reorderCardTypes(newOrder),
+})
 
 const tabs = computed(() => [
   { key: 'options', label: 'Options', icon: 'i-lucide-settings-2' },

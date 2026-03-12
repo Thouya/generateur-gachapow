@@ -17,8 +17,16 @@ export function useAuth() {
     user.value = session?.user ?? null
     loading.value = false
 
-    supabase.auth.onAuthStateChange((_event, session) => {
-      user.value = session?.user ?? null
+    supabase.auth.onAuthStateChange((event, session) => {
+      // Ne mettre user à null que sur un vrai SIGNED_OUT.
+      // TOKEN_REFRESHED / INITIAL_SESSION peuvent arriver sans session
+      // temporairement (pendant le refresh) et ne doivent pas déclencher
+      // un rechargement complet des données.
+      if (event === 'SIGNED_OUT') {
+        user.value = null
+      } else if (session?.user) {
+        user.value = session.user
+      }
     })
   }
 
