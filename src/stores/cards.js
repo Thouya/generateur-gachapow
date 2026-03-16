@@ -385,7 +385,7 @@ export const useCardsStore = defineStore('cards', () => {
     const path = `${projectId}/${folder}/${Date.now()}.${ext}`
     const { error } = await supabase.storage
       .from('card-images')
-      .upload(path, file, { upsert: false, contentType: file.type })
+      .upload(path, file, { upsert: false, contentType: file.type, cacheControl: '31536000' })
     if (error) return { error: error.message }
     const { data: { publicUrl } } = supabase.storage.from('card-images').getPublicUrl(path)
     return { url: publicUrl, path }
