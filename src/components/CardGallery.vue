@@ -38,6 +38,19 @@
           <span class="hidden sm:inline">{{ selecting ? 'Annuler' : 'Sélectionner' }}</span>
         </UButton>
 
+        <!-- Export CSV -->
+        <UButton
+          v-if="cards.length > 0"
+          icon="i-lucide-table"
+          color="neutral"
+          variant="soft"
+          size="sm"
+          title="Exporter en CSV"
+          @click="exportCsv"
+        >
+          <span class="hidden sm:inline">CSV</span>
+        </UButton>
+
         <!-- Export PDF -->
         <UButton
           v-if="cards.length > 0"
@@ -319,6 +332,36 @@ function toggleAll() {
   } else {
     filteredCards.value.forEach((c) => selectedIds.add(c.id))
   }
+}
+
+// --- Export CSV ---
+
+function exportCsv() {
+  const cols = visibleColumns.value
+  if (!cols.length) return
+  const cardsToExport = selecting.value && selectedIds.size > 0
+    ? filteredCards.value.filter((c) => selectedIds.has(c.id))
+    : filteredCards.value
+
+  function escapeCell(val) {
+    const str = String(val ?? '')
+    return str.includes(',') || str.includes('\n') || str.includes('"')
+      ? `"${str.replace(/"/g, '""')}"`
+      : str
+  }
+
+  const header = cols.map(escapeCell).join(',')
+  const lines = cardsToExport.map((card) =>
+    cols.map((col) => escapeCell(card.data?.[col] ?? '')).join(',')
+  )
+  const csv = [header, ...lines].join('\n')
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${cardType.value.name || 'cartes'}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 // --- Export PDF ---
